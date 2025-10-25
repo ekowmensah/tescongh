@@ -23,7 +23,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $password = $_POST['password'];
     $fullname = sanitize($_POST['fullname']);
     $phone = sanitize($_POST['phone']);
-    $date_of_birth = sanitize($_POST['date_of_birth']);
     $institution = sanitize($_POST['institution']);
     $department = sanitize($_POST['department']);
     $program = sanitize($_POST['program']);
@@ -32,8 +31,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $position = sanitize($_POST['position']);
     $region = sanitize($_POST['region']);
     $constituency = sanitize($_POST['constituency']);
-    $hails_from_region = sanitize($_POST['hails_from_region']);
-    $hails_from_constituency = sanitize($_POST['hails_from_constituency']);
     $npp_position = sanitize($_POST['npp_position']);
     $campus_id = !empty($_POST['campus_id']) ? (int)$_POST['campus_id'] : null;
     
@@ -57,7 +54,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'user_id' => $userId,
             'fullname' => $fullname,
             'phone' => $phone,
-            'date_of_birth' => $date_of_birth,
             'photo' => $photo,
             'institution' => $institution,
             'department' => $department,
@@ -67,8 +63,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'position' => $position,
             'region' => $region,
             'constituency' => $constituency,
-            'hails_from_region' => $hails_from_region,
-            'hails_from_constituency' => $hails_from_constituency,
             'npp_position' => $npp_position,
             'campus_id' => $campus_id,
             'membership_status' => 'Active'
@@ -148,40 +142,8 @@ include 'includes/header.php';
                             <div id="phone-feedback" class="invalid-feedback"></div>
                         </div>
                         <div class="col-md-6 mb-3">
-                            <label class="form-label">Date of Birth</label>
-                            <input type="date" class="form-control" name="date_of_birth">
-                        </div>
-                        <div class="col-md-6 mb-3">
                             <label class="form-label">Profile Photo</label>
                             <input type="file" class="form-control" name="photo" accept="image/*">
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="card">
-                <div class="card-header">
-                    <strong>Current Location (School)</strong>
-                </div>
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Current Region <span class="text-danger">*</span></label>
-                            <select class="form-select" name="region" id="current_region" required>
-                                <option value="">Select Region</option>
-                                <?php foreach ($regions as $reg): ?>
-                                    <option value="<?php echo htmlspecialchars($reg['name']); ?>" data-id="<?php echo $reg['id']; ?>">
-                                        <?php echo htmlspecialchars($reg['name']); ?>
-                                    </option>
-                                <?php endforeach; ?>
-                            </select>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Current Constituency <span class="text-danger">*</span></label>
-                            <select class="form-select" name="constituency" id="current_constituency" required>
-                                <option value="">Select Region First</option>
-                            </select>
-                            <small class="text-muted">Required to load institutions</small>
                         </div>
                     </div>
                 </div>
@@ -193,6 +155,25 @@ include 'includes/header.php';
                 </div>
                 <div class="card-body">
                     <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Region <span class="text-danger">*</span></label>
+                            <select class="form-select" name="region" id="current_region" required>
+                                <option value="">Select Region</option>
+                                <?php foreach ($regions as $reg): ?>
+                                    <option value="<?php echo htmlspecialchars($reg['name']); ?>" data-id="<?php echo $reg['id']; ?>">
+                                        <?php echo htmlspecialchars($reg['name']); ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Constituency <span class="text-danger">*</span></label>
+                            <select class="form-select" name="constituency" id="current_constituency" required>
+                                <option value="">Select Region First</option>
+                            </select>
+                            <small class="text-muted">Required to load institutions</small>
+                        </div>
+                        
                         <div class="col-md-12 mb-3">
                             <label class="form-label">Institution <span class="text-danger">*</span></label>
                             <select class="form-select" name="institution" id="institution_select" required>
@@ -236,33 +217,6 @@ include 'includes/header.php';
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Program <span class="text-danger">*</span></label>
                             <input type="text" class="form-control" name="program" placeholder="e.g., BSc Computer Science" required>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="card">
-                <div class="card-header">
-                    <strong>Origin (Hails From)</strong>
-                </div>
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Hails From Region</label>
-                            <select class="form-select" name="hails_from_region" id="hails_region">
-                                <option value="">Select Region</option>
-                                <?php foreach ($regions as $reg): ?>
-                                    <option value="<?php echo htmlspecialchars($reg['name']); ?>" data-id="<?php echo $reg['id']; ?>">
-                                        <?php echo htmlspecialchars($reg['name']); ?>
-                                    </option>
-                                <?php endforeach; ?>
-                            </select>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Hails From Constituency</label>
-                            <select class="form-select" name="hails_from_constituency" id="hails_constituency">
-                                <option value="">Select Region First</option>
-                            </select>
                         </div>
                     </div>
                 </div>
@@ -602,28 +556,6 @@ document.getElementById('institution_select').addEventListener('change', functio
     }
 });
 
-// Load constituencies for hails from region
-document.getElementById('hails_region').addEventListener('change', function() {
-    const selectedOption = this.options[this.selectedIndex];
-    const regionId = selectedOption.getAttribute('data-id');
-    const constituencySelect = document.getElementById('hails_constituency');
-    
-    if (regionId) {
-        fetch('ajax/get_constituencies.php?region_id=' + regionId)
-            .then(response => response.json())
-            .then(data => {
-                constituencySelect.innerHTML = '<option value="">Select Constituency</option>';
-                data.forEach(constituency => {
-                    const option = document.createElement('option');
-                    option.value = constituency.name;
-                    option.textContent = constituency.name;
-                    constituencySelect.appendChild(option);
-                });
-            });
-    } else {
-        constituencySelect.innerHTML = '<option value="">Select Region First</option>';
-    }
-});
 </script>
 
 <?php include 'includes/footer.php'; ?>
