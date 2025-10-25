@@ -12,21 +12,18 @@ class Member {
      */
     public function create($data) {
         $query = "INSERT INTO " . $this->table . " 
-                  (user_id, fullname, phone, date_of_birth, photo, institution, department, program, year, 
-                   student_id, position, region, constituency, hails_from_region, hails_from_constituency, 
-                   npp_position, campus_id, membership_status) 
+                  (user_id, fullname, phone, photo, institution, department, program, year, 
+                   student_id, position, region, constituency, npp_position, campus_id, membership_status) 
                   VALUES 
-                  (:user_id, :fullname, :phone, :date_of_birth, :photo, :institution, :department, :program, :year, 
-                   :student_id, :position, :region, :constituency, :hails_from_region, :hails_from_constituency, 
-                   :npp_position, :campus_id, :membership_status)";
+                  (:user_id, :fullname, :phone, :photo, :institution, :department, :program, :year, 
+                   :student_id, :position, :region, :constituency, :npp_position, :campus_id, :membership_status)";
         
         $stmt = $this->conn->prepare($query);
         
         // Only bind parameters that are in the query
-        $allowedFields = ['user_id', 'fullname', 'phone', 'date_of_birth', 'photo', 'institution', 
+        $allowedFields = ['user_id', 'fullname', 'phone', 'photo', 'institution', 
                           'department', 'program', 'year', 'student_id', 'position', 'region', 
-                          'constituency', 'hails_from_region', 'hails_from_constituency', 'npp_position', 
-                          'campus_id', 'membership_status'];
+                          'constituency', 'npp_position', 'campus_id', 'membership_status'];
         
         foreach ($data as $key => $value) {
             if (in_array($key, $allowedFields)) {
