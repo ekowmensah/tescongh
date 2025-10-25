@@ -16,67 +16,132 @@
     
     <!-- Custom CSS -->
     <style>
+        :root {
+            --primary-blue: #1e40af;
+            --secondary-blue: #3b82f6;
+            --light-blue: #dbeafe;
+            --primary-red: #dc2626;
+            --secondary-red: #ef4444;
+            --light-red: #fee2e2;
+            --white: #ffffff;
+            --gray-50: #f9fafb;
+            --gray-100: #f3f4f6;
+            --gray-800: #1f2937;
+            --gray-900: #111827;
+        }
+        
         .sidebar {
-            --cui-sidebar-bg: #2c3e50;
-            --cui-sidebar-nav-link-color: rgba(255, 255, 255, 0.8);
+            --cui-sidebar-bg: linear-gradient(180deg, var(--primary-blue) 0%, #1e3a8a 100%);
+            --cui-sidebar-nav-link-color: rgba(255, 255, 255, 0.9);
             --cui-sidebar-nav-link-hover-color: #fff;
-            --cui-sidebar-nav-link-hover-bg: rgba(255, 255, 255, 0.1);
+            --cui-sidebar-nav-link-hover-bg: rgba(220, 38, 38, 0.2);
             --cui-sidebar-nav-link-active-color: #fff;
-            --cui-sidebar-nav-link-active-bg: #667eea;
+            --cui-sidebar-nav-link-active-bg: var(--primary-red);
+            background: linear-gradient(180deg, var(--primary-blue) 0%, #1e3a8a 100%);
         }
         
         .sidebar-brand {
-            background: #1a252f;
-            padding: 1rem;
-            font-size: 1.25rem;
-            font-weight: bold;
+            background: var(--primary-red);
+            padding: 1.25rem;
+            font-size: 1.4rem;
+            font-weight: 800;
             color: white;
+            text-align: center;
+            letter-spacing: 1px;
+            border-bottom: 3px solid var(--white);
         }
         
         .header {
-            box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+            background: var(--white);
+            box-shadow: 0 2px 8px rgba(30, 64, 175, 0.1);
+            border-bottom: 2px solid var(--light-blue);
         }
         
         .card {
             border: none;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
             margin-bottom: 1.5rem;
+            border-radius: 12px;
+            overflow: hidden;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(30, 64, 175, 0.15);
+        }
+        
+        .card-header {
+            background: linear-gradient(135deg, var(--primary-blue) 0%, var(--secondary-blue) 100%);
+            color: white;
+            font-weight: 600;
+            border-bottom: none;
         }
         
         .stat-card {
             border-left: 4px solid;
+            border-radius: 8px;
         }
         
         .stat-card.primary {
-            border-left-color: #667eea;
+            border-left-color: var(--primary-blue);
+            background: linear-gradient(135deg, var(--light-blue) 0%, var(--white) 100%);
         }
         
         .stat-card.success {
-            border-left-color: #2eb85c;
+            border-left-color: #10b981;
+            background: linear-gradient(135deg, #d1fae5 0%, var(--white) 100%);
         }
         
         .stat-card.warning {
-            border-left-color: #f9b115;
+            border-left-color: #f59e0b;
+            background: linear-gradient(135deg, #fef3c7 0%, var(--white) 100%);
         }
         
         .stat-card.danger {
-            border-left-color: #e55353;
+            border-left-color: var(--primary-red);
+            background: linear-gradient(135deg, var(--light-red) 0%, var(--white) 100%);
         }
         
         .stat-card.info {
-            border-left-color: #39f;
+            border-left-color: var(--secondary-blue);
+            background: linear-gradient(135deg, var(--light-blue) 0%, var(--white) 100%);
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary-blue) 0%, var(--secondary-blue) 100%);
+            border: none;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #1e3a8a 0%, var(--primary-blue) 100%);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(30, 64, 175, 0.3);
+        }
+        
+        .btn-danger {
+            background: linear-gradient(135deg, var(--primary-red) 0%, var(--secondary-red) 100%);
+            border: none;
+            font-weight: 600;
+        }
+        
+        .btn-danger:hover {
+            background: linear-gradient(135deg, #b91c1c 0%, var(--primary-red) 100%);
         }
         
         .avatar-initials {
             width: 40px;
             height: 40px;
             border-radius: 50%;
-            background: #667eea;
+            background: linear-gradient(135deg, var(--primary-red) 0%, var(--secondary-red) 100%);
             color: white;
             display: flex;
             align-items: center;
             justify-content: center;
             font-weight: bold;
+            border: 2px solid var(--white);
         }
         
         .table-actions {
@@ -223,10 +288,22 @@
                 </a>
             </li>
             
-            <li class="nav-item">
-                <a class="nav-link <?php echo basename($_SERVER['PHP_SELF']) == 'reports.php' ? 'active' : ''; ?>" href="reports.php">
+            <li class="nav-group">
+                <a class="nav-link nav-group-toggle" href="#">
                     <i class="nav-icon cil-chart-line"></i> Reports
                 </a>
+                <ul class="nav-group-items">
+                    <li class="nav-item">
+                        <a class="nav-link <?php echo basename($_SERVER['PHP_SELF']) == 'reports.php' ? 'active' : ''; ?>" href="reports.php">
+                            <i class="nav-icon cil-chart"></i> Analytics
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link <?php echo basename($_SERVER['PHP_SELF']) == 'register.php' ? 'active' : ''; ?>" href="register.php">
+                            <i class="nav-icon cil-address-book"></i> Members Register
+                        </a>
+                    </li>
+                </ul>
             </li>
             <?php endif; ?>
         </ul>

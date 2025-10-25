@@ -26,6 +26,15 @@ $query = "SELECT * FROM sms_templates ORDER BY name ASC";
 $stmt = $db->query($query);
 $templates = $stmt->fetchAll();
 
+// Get custom lists
+$query = "SELECT cl.*, COUNT(clm.member_id) as member_count 
+          FROM custom_lists cl 
+          LEFT JOIN custom_list_members clm ON cl.id = clm.list_id 
+          GROUP BY cl.id 
+          ORDER BY cl.name ASC";
+$stmt = $db->query($query);
+$customLists = $stmt->fetchAll();
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $recipient_type = sanitize($_POST['recipient_type']);
     $message = sanitize($_POST['message']);
@@ -48,6 +57,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $memberData = $member->getById($member_id);
         if ($memberData) {
             $recipients = [$memberData];
+        }
+    } elseif ($recipient_type === 'custom_list') {
+        $list_id = (int)$_POST['custom_list_id'];
+        // Get members from custom list
+        $query = "SELECT m.* FROM members m 
+                  INNER JOIN custom_list_members clm ON m.id = clm.member_id 
+                  WHERE clm.list_id = :list_id";
+        $stmt = $db->prepare($query);
+        $stmt->bindParam(':list_id', $list_id);
+        $stmt->execute();
+        $recipients = $stmt->fetchAll();
+    } elseif ($recipient_type === 'custom_numbers') {
+        $custom_numbers = sanitize($_POST['custom_numbers']);
+        // Parse phone numbers (comma, semicolon, or newline separated)
+        $numbers = preg_split('/[,;\n\r]+/', $custom_numbers);
+        $numbers = array_map('trim', $numbers);
+        $numbers = array_filter($numbers); // Remove empty values
+        
+        // Create recipient array with phone numbers
+        foreach ($numbers as $number) {
+            $recipients[] = [
+                'phone' => $number,
+                'fullname' => 'Custom Recipient',
+                'student_id' => 'N/A'
+            ];
         }
     }
     
@@ -118,6 +152,8 @@ include 'includes/header.php';
                             <option value="region">By Region</option>
                             <option value="status">By Status</option>
                             <option value="position">By Position</option>
+                            <option value="custom_numbers">Custom Phone Numbers</option>
+                            <option value="custom_list">Custom List</option>
                             <option value="individual">Individual Member</option>
                         </select>
                     </div>
@@ -153,6 +189,29 @@ include 'includes/header.php';
                             <option value="Executive">Executive</option>
                             <option value="Patron">Patron</option>
                         </select>
+                    </div>
+                    
+                    <div id="custom_numbers_filter" class="mb-3" style="display: none;">
+                        <label class="form-label">Enter Phone Numbers</label>
+                        <textarea class="form-control" name="custom_numbers" id="custom_numbers" rows="6" placeholder="Enter phone numbers (one per line or comma-separated)&#10;Example:&#10;+233501234567&#10;+233241234567, +233551234567&#10;0501234567"></textarea>
+                        <small class="text-muted">
+                            Enter phone numbers separated by commas, semicolons, or new lines. <span id="number_count">0</span> number(s) entered.
+                        </small>
+                    </div>
+                    
+                    <div id="custom_list_filter" class="mb-3" style="display: none;">
+                        <label class="form-label">Select Custom List</label>
+                        <select class="form-select" name="custom_list_id">
+                            <option value="">Select Custom List</option>
+                            <?php foreach ($customLists as $list): ?>
+                                <option value="<?php echo $list['id']; ?>">
+                                    <?php echo htmlspecialchars($list['name']); ?> (<?php echo $list['member_count']; ?> members)
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                        <small class="text-muted">
+                            <a href="custom_lists.php" target="_blank">Manage Custom Lists</a>
+                        </small>
                     </div>
                     
                     <div id="individual_filter" class="mb-3" style="display: none;">
@@ -240,6 +299,8 @@ document.getElementById('recipient_type').addEventListener('change', function() 
     document.getElementById('region_filter').style.display = 'none';
     document.getElementById('status_filter').style.display = 'none';
     document.getElementById('position_filter').style.display = 'none';
+    document.getElementById('custom_numbers_filter').style.display = 'none';
+    document.getElementById('custom_list_filter').style.display = 'none';
     document.getElementById('individual_filter').style.display = 'none';
     
     if (this.value === 'region') {
@@ -248,6 +309,10 @@ document.getElementById('recipient_type').addEventListener('change', function() 
         document.getElementById('status_filter').style.display = 'block';
     } else if (this.value === 'position') {
         document.getElementById('position_filter').style.display = 'block';
+    } else if (this.value === 'custom_numbers') {
+        document.getElementById('custom_numbers_filter').style.display = 'block';
+    } else if (this.value === 'custom_list') {
+        document.getElementById('custom_list_filter').style.display = 'block';
     } else if (this.value === 'individual') {
         document.getElementById('individual_filter').style.display = 'block';
         loadMembers();
@@ -271,6 +336,15 @@ function updateCharCount() {
 }
 
 messageField.addEventListener('input', updateCharCount);
+
+// Count phone numbers in custom numbers field
+const customNumbersField = document.getElementById('custom_numbers');
+if (customNumbersField) {
+    customNumbersField.addEventListener('input', function() {
+        const numbers = this.value.split(/[,;\n\r]+/).map(n => n.trim()).filter(n => n.length > 0);
+        document.getElementById('number_count').textContent = numbers.length;
+    });
+}
 
 // Load members for individual selection
 function loadMembers() {
