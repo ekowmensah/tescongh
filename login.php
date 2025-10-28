@@ -392,9 +392,9 @@ if (isset($_GET['timeout'])) {
                                   <!--      <p class="text-medium-emphasis mb-2">
                                             <small>Default login: ekowme@gmail.com / password</small>
                                         </p> -->
-                                        <!--<p class="mb-0">
+                                        <p class="mb-0">
                                             <a href="signup.php" class="register-link">Don't have an account? Register here</a>
-                                        </p>-->
+                                        
                                     </div>
                                 </div>
                             </div>

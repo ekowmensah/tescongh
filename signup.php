@@ -4,6 +4,7 @@ require_once 'config/Database.php';
 require_once 'includes/functions.php';
 require_once 'classes/User.php';
 require_once 'classes/Member.php';
+require_once 'classes/Region.php';
 
 // Redirect if already logged in
 if (isLoggedIn()) {
@@ -14,21 +15,37 @@ $error = '';
 $success = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $fullname = sanitize($_POST['fullname']);
-    $email = sanitize($_POST['email']);
-    $phone = sanitize($_POST['phone']);
     $password = $_POST['password'];
     $confirm_password = $_POST['confirm_password'];
+    $student_id = sanitize($_POST['student_id']);
+    // Generate email from student ID for user account
+    $email = strtolower(str_replace(' ', '', $student_id)) . '@member.tescongh.org';
+    $fullname = sanitize($_POST['fullname']);
+    $phone = sanitize($_POST['phone']);
     $institution = sanitize($_POST['institution']);
+    $department = sanitize($_POST['department']);
     $program = sanitize($_POST['program']);
     $year = sanitize($_POST['year']);
-    $student_id = sanitize($_POST['student_id']);
+    $position = isset($_POST['position']) ? sanitize($_POST['position']) : 'Member';
+    $region = sanitize($_POST['region']);
+    $constituency = sanitize($_POST['constituency']);
+    $npp_position = sanitize($_POST['npp_position']);
+    $voting_region = sanitize($_POST['voting_region']);
+    $voting_constituency = sanitize($_POST['voting_constituency']);
+    $campus_id = !empty($_POST['campus_id']) ? (int)$_POST['campus_id'] : null;
+    
+    // Handle photo upload
+    $photo = null;
+    if (isset($_FILES['photo']) && $_FILES['photo']['error'] === UPLOAD_ERR_OK) {
+        $uploadResult = uploadFile($_FILES['photo'], 'uploads/');
+        if ($uploadResult['success']) {
+            $photo = $uploadResult['filename'];
+        }
+    }
     
     // Validation
-    if (empty($fullname) || empty($email) || empty($phone) || empty($password) || empty($institution) || empty($program) || empty($year)) {
+    if (empty($fullname) || empty($phone) || empty($password) || empty($institution) || empty($program) || empty($year) || empty($student_id) || empty($region) || empty($constituency)) {
         $error = 'Please fill in all required fields';
-    } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-        $error = 'Please enter a valid email address';
     } elseif ($password !== $confirm_password) {
         $error = 'Passwords do not match';
     } elseif (strlen($password) < 6) {
@@ -38,14 +55,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $db = $database->getConnection();
         
         if ($db) {
-            // Check if email already exists
-            $check_query = "SELECT id FROM users WHERE email = :email";
+            // Check if student ID already exists
+            $check_query = "SELECT id FROM members WHERE student_id = :student_id";
             $check_stmt = $db->prepare($check_query);
-            $check_stmt->bindParam(':email', $email);
+            $check_stmt->bindParam(':student_id', $student_id);
             $check_stmt->execute();
             
             if ($check_stmt->rowCount() > 0) {
-                $error = 'Email already registered. Please login instead.';
+                $error = 'Student ID already registered. Please login instead.';
             } else {
                 try {
                     $db->beginTransaction();
@@ -61,21 +78,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $user_id = $db->lastInsertId();
                     
                     // Create member profile
-                    $member_query = "INSERT INTO members (user_id, fullname, phone, institution, program, year, student_id, position, membership_status) 
-                                    VALUES (:user_id, :fullname, :phone, :institution, :program, :year, :student_id, 'Member', 'Active')";
+                    $member_query = "INSERT INTO members (user_id, fullname, phone, photo, institution, department, program, year, student_id, position, region, constituency, npp_position, voting_region, voting_constituency, campus_id, membership_status) 
+                                    VALUES (:user_id, :fullname, :phone, :photo, :institution, :department, :program, :year, :student_id, :position, :region, :constituency, :npp_position, :voting_region, :voting_constituency, :campus_id, 'Active')";
                     $member_stmt = $db->prepare($member_query);
                     $member_stmt->bindParam(':user_id', $user_id);
                     $member_stmt->bindParam(':fullname', $fullname);
                     $member_stmt->bindParam(':phone', $phone);
+                    $member_stmt->bindParam(':photo', $photo);
                     $member_stmt->bindParam(':institution', $institution);
+                    $member_stmt->bindParam(':department', $department);
                     $member_stmt->bindParam(':program', $program);
                     $member_stmt->bindParam(':year', $year);
                     $member_stmt->bindParam(':student_id', $student_id);
+                    $member_stmt->bindParam(':position', $position);
+                    $member_stmt->bindParam(':region', $region);
+                    $member_stmt->bindParam(':constituency', $constituency);
+                    $member_stmt->bindParam(':npp_position', $npp_position);
+                    $member_stmt->bindParam(':voting_region', $voting_region);
+                    $member_stmt->bindParam(':voting_constituency', $voting_constituency);
+                    $member_stmt->bindParam(':campus_id', $campus_id);
                     $member_stmt->execute();
                     
                     $db->commit();
                     
-                    $success = 'Registration successful! You can now login with your email and password.';
+                    $success = 'Registration successful! You can now login with your Student ID and password.';
                     
                     // Clear form
                     $_POST = array();
@@ -91,9 +117,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-// Get institutions for dropdown
+// Get regions and institutions for dropdown
 $database = new Database();
 $db = $database->getConnection();
+$regionObj = new Region($db);
+$regions = $regionObj->getAll();
+
 $institutions_query = "SELECT DISTINCT institution FROM members ORDER BY institution ASC";
 $institutions_stmt = $db->query($institutions_query);
 $institutions = $institutions_stmt->fetchAll(PDO::FETCH_COLUMN);
@@ -245,7 +274,11 @@ $institutions = $institutions_stmt->fetchAll(PDO::FETCH_COLUMN);
                             </div>
                         <?php endif; ?>
                         
-                        <form method="POST" action="">
+                        <form method="POST" action="" enctype="multipart/form-data">
+                            <div class="alert alert-info">
+                                <i class="cil-info"></i> <strong>Login Credentials:</strong> You will login using your <strong>Student ID</strong> and password.
+                            </div>
+                            
                             <div class="section-title">Personal Information</div>
                             
                             <div class="row">
@@ -255,20 +288,22 @@ $institutions = $institutions_stmt->fetchAll(PDO::FETCH_COLUMN);
                                 </div>
                                 
                                 <div class="col-md-6 mb-3">
-                                    <label class="form-label">Email Address <span class="text-danger">*</span></label>
-                                    <input type="email" class="form-control" name="email" placeholder="your.email@example.com" required value="<?php echo isset($_POST['email']) ? htmlspecialchars($_POST['email']) : ''; ?>">
+                                    <label class="form-label">Phone Number <span class="text-danger">*</span></label>
+                                    <input type="tel" class="form-control" name="phone" placeholder="0XXXXXXXXX" required value="<?php echo isset($_POST['phone']) ? htmlspecialchars($_POST['phone']) : ''; ?>">
+                                    <small class="text-muted">Enter 10 digits (e.g., 0241234567)</small>
                                 </div>
                             </div>
                             
                             <div class="row">
                                 <div class="col-md-6 mb-3">
-                                    <label class="form-label">Phone Number <span class="text-danger">*</span></label>
-                                    <input type="tel" class="form-control" name="phone" placeholder="+233XXXXXXXXX" required value="<?php echo isset($_POST['phone']) ? htmlspecialchars($_POST['phone']) : ''; ?>">
+                                    <label class="form-label">Student ID <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" name="student_id" placeholder="Your student ID" required value="<?php echo isset($_POST['student_id']) ? htmlspecialchars($_POST['student_id']) : ''; ?>">
+                                    <small class="text-muted"><strong>Important:</strong> This will be used for login</small>
                                 </div>
                                 
                                 <div class="col-md-6 mb-3">
-                                    <label class="form-label">Student ID</label>
-                                    <input type="text" class="form-control" name="student_id" placeholder="Your student ID" value="<?php echo isset($_POST['student_id']) ? htmlspecialchars($_POST['student_id']) : ''; ?>">
+                                    <label class="form-label">Profile Photo</label>
+                                    <input type="file" class="form-control" name="photo" accept="image/*">
                                 </div>
                             </div>
                             
@@ -276,13 +311,49 @@ $institutions = $institutions_stmt->fetchAll(PDO::FETCH_COLUMN);
                             
                             <div class="row">
                                 <div class="col-md-6 mb-3">
-                                    <label class="form-label">Institution <span class="text-danger">*</span></label>
-                                    <input type="text" class="form-control" name="institution" list="institutions" placeholder="Select or type institution" required value="<?php echo isset($_POST['institution']) ? htmlspecialchars($_POST['institution']) : ''; ?>">
-                                    <datalist id="institutions">
-                                        <?php foreach ($institutions as $inst): ?>
-                                            <option value="<?php echo htmlspecialchars($inst); ?>">
+                                    <label class="form-label">Region <span class="text-danger">*</span></label>
+                                    <select class="form-select" name="region" id="current_region" required>
+                                        <option value="">Select Region</option>
+                                        <?php foreach ($regions as $reg): ?>
+                                            <option value="<?php echo htmlspecialchars($reg['name']); ?>" data-id="<?php echo $reg['id']; ?>">
+                                                <?php echo htmlspecialchars($reg['name']); ?>
+                                            </option>
                                         <?php endforeach; ?>
-                                    </datalist>
+                                    </select>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Constituency <span class="text-danger">*</span></label>
+                                    <select class="form-select" name="constituency" id="current_constituency" required>
+                                        <option value="">Select Region First</option>
+                                    </select>
+                                    <small class="text-muted">Required to load institutions</small>
+                                </div>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-12 mb-3">
+                                    <label class="form-label">Institution <span class="text-danger">*</span></label>
+                                    <select class="form-select" name="institution" id="institution_select" required>
+                                        <option value="">Select Region & Constituency First</option>
+                                    </select>
+                                    <small class="text-muted"><strong>Note:</strong> You must select both region and constituency to load institutions</small>
+                                </div>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-12 mb-3">
+                                    <label class="form-label">Campus</label>
+                                    <select class="form-select" name="campus_id" id="campus_select">
+                                        <option value="">Select Institution First</option>
+                                    </select>
+                                    <small class="text-muted">Campus will populate based on selected institution</small>
+                                </div>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Department</label>
+                                    <input type="text" class="form-control" name="department" placeholder="e.g., Computer Science" value="<?php echo isset($_POST['department']) ? htmlspecialchars($_POST['department']) : ''; ?>">
                                 </div>
                                 
                                 <div class="col-md-6 mb-3">
@@ -291,8 +362,9 @@ $institutions = $institutions_stmt->fetchAll(PDO::FETCH_COLUMN);
                                 </div>
                             </div>
                             
-                            <div class="mb-3">
-                                <label class="form-label">Year of Study <span class="text-danger">*</span></label>
+                            <div class="row">
+                                <div class="col-md-12 mb-3">
+                                    <label class="form-label">Year of Study <span class="text-danger">*</span></label>
                                 <select class="form-select" name="year" required>
                                     <option value="">Select Year</option>
                                     <option value="1" <?php echo (isset($_POST['year']) && $_POST['year'] == '1') ? 'selected' : ''; ?>>Year 1</option>
@@ -301,6 +373,34 @@ $institutions = $institutions_stmt->fetchAll(PDO::FETCH_COLUMN);
                                     <option value="4" <?php echo (isset($_POST['year']) && $_POST['year'] == '4') ? 'selected' : ''; ?>>Year 4</option>
                                     <option value="5" <?php echo (isset($_POST['year']) && $_POST['year'] == '5') ? 'selected' : ''; ?>>Year 5</option>
                                     <option value="6" <?php echo (isset($_POST['year']) && $_POST['year'] == '6') ? 'selected' : ''; ?>>Year 6</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div class="section-title">Political Information (Optional)</div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">NPP Position (if any)</label>
+                                <input type="text" class="form-control" name="npp_position" placeholder="e.g., Polling Station Executive" value="<?php echo isset($_POST['npp_position']) ? htmlspecialchars($_POST['npp_position']) : ''; ?>">
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Voting Region</label>
+                                <select class="form-select" name="voting_region" id="voting_region">
+                                    <option value="">Select Voting Region</option>
+                                    <?php foreach ($regions as $reg): ?>
+                                        <option value="<?php echo htmlspecialchars($reg['name']); ?>" data-id="<?php echo $reg['id']; ?>">
+                                            <?php echo htmlspecialchars($reg['name']); ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                                <small class="text-muted">Where you are registered to vote</small>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Voting Constituency</label>
+                                <select class="form-select" name="voting_constituency" id="voting_constituency">
+                                    <option value="">Select Voting Region First</option>
                                 </select>
                             </div>
                             
@@ -345,5 +445,133 @@ $institutions = $institutions_stmt->fetchAll(PDO::FETCH_COLUMN);
     </div>
     
     <script src="https://unpkg.com/@coreui/coreui@4.2.0/dist/js/coreui.bundle.min.js"></script>
+    <script>
+    // Load constituencies when region is selected
+    document.getElementById('current_region').addEventListener('change', function() {
+        const selectedOption = this.options[this.selectedIndex];
+        const regionId = selectedOption.getAttribute('data-id');
+        const constituencySelect = document.getElementById('current_constituency');
+        const institutionSelect = document.getElementById('institution_select');
+        
+        if (regionId) {
+            // Load constituencies
+            fetch('ajax/get_constituencies.php?region_id=' + regionId)
+                .then(response => response.json())
+                .then(data => {
+                    constituencySelect.innerHTML = '<option value="">Select Constituency</option>';
+                    data.forEach(constituency => {
+                        const option = document.createElement('option');
+                        option.value = constituency.name;
+                        option.setAttribute('data-id', constituency.id);
+                        option.textContent = constituency.name;
+                        constituencySelect.appendChild(option);
+                    });
+                });
+            
+            // Clear institutions - wait for constituency selection
+            institutionSelect.innerHTML = '<option value="">Select Constituency to load institutions</option>';
+        } else {
+            constituencySelect.innerHTML = '<option value="">Select Region First</option>';
+            institutionSelect.innerHTML = '<option value="">Select Region & Constituency First</option>';
+        }
+    });
+
+    // Load institutions when constituency is selected
+    document.getElementById('current_constituency').addEventListener('change', function() {
+        const regionSelect = document.getElementById('current_region');
+        const selectedRegionOption = regionSelect.options[regionSelect.selectedIndex];
+        const regionId = selectedRegionOption.getAttribute('data-id');
+        
+        const selectedConstOption = this.options[this.selectedIndex];
+        const constituencyId = selectedConstOption.getAttribute('data-id');
+        const constituencyName = this.value;
+        
+        // Only load institutions if BOTH region and constituency are selected
+        if (regionId && constituencyName && constituencyId) {
+            loadInstitutions(regionId, constituencyId);
+        } else {
+            const institutionSelect = document.getElementById('institution_select');
+            institutionSelect.innerHTML = '<option value="">Select Constituency to load institutions</option>';
+        }
+    });
+
+    // Function to load institutions
+    function loadInstitutions(regionId, constituencyId) {
+        const institutionSelect = document.getElementById('institution_select');
+        let url = 'ajax/get_institutions.php?region_id=' + regionId;
+        if (constituencyId) {
+            url += '&constituency_id=' + constituencyId;
+        }
+        
+        fetch(url)
+            .then(response => response.json())
+            .then(data => {
+                institutionSelect.innerHTML = '<option value="">Select Institution</option>';
+                data.forEach(institution => {
+                    const option = document.createElement('option');
+                    option.value = institution.name;
+                    option.textContent = institution.name;
+                    institutionSelect.appendChild(option);
+                });
+                
+                if (data.length === 0) {
+                    institutionSelect.innerHTML = '<option value="">No institutions found in this area</option>';
+                }
+            });
+    }
+
+    // Load campuses when institution is selected
+    document.getElementById('institution_select').addEventListener('change', function() {
+        const institutionName = this.value;
+        const campusSelect = document.getElementById('campus_select');
+        
+        if (institutionName) {
+            fetch('ajax/get_campuses.php?institution=' + encodeURIComponent(institutionName))
+                .then(response => response.json())
+                .then(data => {
+                    campusSelect.innerHTML = '<option value="">Select Campus (Optional)</option>';
+                    data.forEach(campus => {
+                        const option = document.createElement('option');
+                        option.value = campus.id;
+                        option.textContent = campus.name + ' - ' + campus.location;
+                        campusSelect.appendChild(option);
+                    });
+                    
+                    if (data.length === 0) {
+                        campusSelect.innerHTML = '<option value="">No campuses found for this institution</option>';
+                    }
+                });
+        } else {
+            campusSelect.innerHTML = '<option value="">Select Institution First</option>';
+        }
+    });
+
+    // Load voting constituencies when voting region is selected
+    document.getElementById('voting_region').addEventListener('change', function() {
+        const selectedOption = this.options[this.selectedIndex];
+        const regionId = selectedOption.getAttribute('data-id');
+        const votingConstituencySelect = document.getElementById('voting_constituency');
+        
+        if (regionId) {
+            fetch('ajax/get_constituencies.php?region_id=' + regionId)
+                .then(response => response.json())
+                .then(data => {
+                    votingConstituencySelect.innerHTML = '<option value="">Select Voting Constituency</option>';
+                    data.forEach(constituency => {
+                        const option = document.createElement('option');
+                        option.value = constituency.name;
+                        option.textContent = constituency.name;
+                        votingConstituencySelect.appendChild(option);
+                    });
+                    
+                    if (data.length === 0) {
+                        votingConstituencySelect.innerHTML = '<option value="">No constituencies found</option>';
+                    }
+                });
+        } else {
+            votingConstituencySelect.innerHTML = '<option value="">Select Voting Region First</option>';
+        }
+    });
+    </script>
 </body>
 </html>

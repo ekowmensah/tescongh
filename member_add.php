@@ -19,19 +19,22 @@ $regionObj = new Region($db);
 $regions = $regionObj->getAll();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $email = sanitize($_POST['email']);
     $password = $_POST['password'];
+    $student_id = sanitize($_POST['student_id']);
+    // Generate email from student ID for user account
+    $email = strtolower(str_replace(' ', '', $student_id)) . '@member.tescongh.org';
     $fullname = sanitize($_POST['fullname']);
     $phone = sanitize($_POST['phone']);
     $institution = sanitize($_POST['institution']);
     $department = sanitize($_POST['department']);
     $program = sanitize($_POST['program']);
     $year = sanitize($_POST['year']);
-    $student_id = sanitize($_POST['student_id']);
     $position = sanitize($_POST['position']);
     $region = sanitize($_POST['region']);
     $constituency = sanitize($_POST['constituency']);
     $npp_position = sanitize($_POST['npp_position']);
+    $voting_region = sanitize($_POST['voting_region']);
+    $voting_constituency = sanitize($_POST['voting_constituency']);
     $campus_id = !empty($_POST['campus_id']) ? (int)$_POST['campus_id'] : null;
     
     // Handle photo upload
@@ -64,6 +67,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'region' => $region,
             'constituency' => $constituency,
             'npp_position' => $npp_position,
+            'voting_region' => $voting_region,
+            'voting_constituency' => $voting_constituency,
             'campus_id' => $campus_id,
             'membership_status' => 'Active'
         ];
@@ -102,34 +107,12 @@ include 'includes/header.php';
         <div class="col-md-8">
             <div class="card">
                 <div class="card-header">
-                    <strong>Account Information</strong>
-                </div>
-                <div class="card-body">
-                    <div class="alert alert-info">
-                        <i class="cil-info"></i> <strong>Login Credentials:</strong> Members will login using their <strong>Student ID</strong> and password. Email is for communication only.
-                    </div>
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Email Address <span class="text-danger">*</span></label>
-                            <input type="email" class="form-control" name="email" id="email" required>
-                            <small class="text-muted">For communication and notifications</small>
-                            <div id="email-feedback" class="invalid-feedback"></div>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Password <span class="text-danger">*</span></label>
-                            <input type="password" class="form-control" name="password" id="password" minlength="6" required>
-                            <small class="text-muted">Minimum 6 characters</small>
-                            <div id="password-feedback" class="invalid-feedback"></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="card">
-                <div class="card-header">
                     <strong>Personal Information</strong>
                 </div>
                 <div class="card-body">
+                    <div class="alert alert-info">
+                        <i class="cil-info"></i> <strong>Login Credentials:</strong> Members will login using their <strong>Student ID</strong> and password.
+                    </div>
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Full Name <span class="text-danger">*</span></label>
@@ -140,6 +123,17 @@ include 'includes/header.php';
                             <input type="text" class="form-control" name="phone" id="phone" placeholder="0XXXXXXXXX" maxlength="10" required>
                             <small class="text-muted">Enter 10 digits (e.g., 0241234567)</small>
                             <div id="phone-feedback" class="invalid-feedback"></div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Student ID <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" name="student_id" id="student_id" required>
+                            <small class="text-muted"><strong>Important:</strong> This will be used for login</small>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Password <span class="text-danger">*</span></label>
+                            <input type="password" class="form-control" name="password" id="password" minlength="6" required>
+                            <small class="text-muted">Minimum 6 characters</small>
+                            <div id="password-feedback" class="invalid-feedback"></div>
                         </div>
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Profile Photo</label>
@@ -191,12 +185,6 @@ include 'includes/header.php';
                         </div>
                         
                         <div class="col-md-6 mb-3">
-                            <label class="form-label">Student ID <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" name="student_id" id="student_id" required>
-                            <small class="text-muted"><strong>Important:</strong> This will be used for login</small>
-                        </div>
-                        
-                        <div class="col-md-6 mb-3">
                             <label class="form-label">Year/Level <span class="text-danger">*</span></label>
                             <select class="form-select" name="year" required>
                                 <option value="">Select Year</option>
@@ -243,6 +231,26 @@ include 'includes/header.php';
                             <label class="form-label">NPP Position (if any)</label>
                             <input type="text" class="form-control" name="npp_position" placeholder="e.g., Polling Station Executive">
                         </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Voting Region</label>
+                            <select class="form-select" name="voting_region" id="voting_region">
+                                <option value="">Select Voting Region</option>
+                                <?php foreach ($regions as $reg): ?>
+                                    <option value="<?php echo htmlspecialchars($reg['name']); ?>" data-id="<?php echo $reg['id']; ?>">
+                                        <?php echo htmlspecialchars($reg['name']); ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                            <small class="text-muted">Where you are registered to vote</small>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Voting Constituency</label>
+                            <select class="form-select" name="voting_constituency" id="voting_constituency">
+                                <option value="">Select Voting Region First</option>
+                            </select>
+                        </div>
                     </div>
                 </div>
                 
@@ -262,66 +270,6 @@ include 'includes/header.php';
 </form>
 
 <script>
-// Real-time Email Validation with Database Check
-const emailInput = document.getElementById('email');
-const emailFeedback = document.getElementById('email-feedback');
-let emailCheckTimeout;
-
-emailInput.addEventListener('input', function() {
-    const email = this.value.trim();
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    
-    // Clear previous timeout
-    clearTimeout(emailCheckTimeout);
-    
-    if (email === '') {
-        this.classList.remove('is-valid', 'is-invalid');
-        emailFeedback.textContent = '';
-        return;
-    }
-    
-    // First check format
-    if (!emailRegex.test(email)) {
-        this.classList.remove('is-valid');
-        this.classList.add('is-invalid');
-        emailFeedback.textContent = 'Please enter a valid email address';
-        emailFeedback.style.display = 'block';
-        return;
-    }
-    
-    // Show checking message
-    this.classList.remove('is-valid', 'is-invalid');
-    emailFeedback.textContent = 'Checking availability...';
-    emailFeedback.style.display = 'block';
-    emailFeedback.style.color = '#6c757d';
-    
-    // Check database after 500ms delay (debounce)
-    emailCheckTimeout = setTimeout(() => {
-        fetch('ajax/check_email.php?email=' + encodeURIComponent(email))
-            .then(response => response.json())
-            .then(data => {
-                if (data.exists) {
-                    emailInput.classList.remove('is-valid');
-                    emailInput.classList.add('is-invalid');
-                    emailFeedback.textContent = '✗ ' + data.message;
-                    emailFeedback.style.color = '#dc3545';
-                    emailFeedback.style.display = 'block';
-                } else {
-                    emailInput.classList.remove('is-invalid');
-                    emailInput.classList.add('is-valid');
-                    emailFeedback.textContent = '✓ ' + data.message;
-                    emailFeedback.style.color = '#28a745';
-                    emailFeedback.style.display = 'block';
-                }
-            })
-            .catch(error => {
-                console.error('Error checking email:', error);
-                emailFeedback.textContent = 'Could not verify email';
-                emailFeedback.style.color = '#dc3545';
-            });
-    }, 500);
-});
-
 // Real-time Phone Number Validation with Database Check
 const phoneInput = document.getElementById('phone');
 const phoneFeedback = document.getElementById('phone-feedback');
@@ -420,20 +368,11 @@ passwordInput.addEventListener('input', function() {
 
 // Form Submission Validation
 document.querySelector('form').addEventListener('submit', function(e) {
-    const email = emailInput.value.trim();
     const phone = phoneInput.value.trim();
     const password = passwordInput.value;
     
     let isValid = true;
     let errorMessage = '';
-    
-    // Validate email
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-        isValid = false;
-        errorMessage += 'Invalid email address.\n';
-        emailInput.classList.add('is-invalid');
-    }
     
     // Validate phone
     if (phone.length !== 10 || !phone.startsWith('0')) {
@@ -553,6 +492,33 @@ document.getElementById('institution_select').addEventListener('change', functio
             });
     } else {
         campusSelect.innerHTML = '<option value="">Select Institution First</option>';
+    }
+});
+
+// Load voting constituencies when voting region is selected
+document.getElementById('voting_region').addEventListener('change', function() {
+    const selectedOption = this.options[this.selectedIndex];
+    const regionId = selectedOption.getAttribute('data-id');
+    const votingConstituencySelect = document.getElementById('voting_constituency');
+    
+    if (regionId) {
+        fetch('ajax/get_constituencies.php?region_id=' + regionId)
+            .then(response => response.json())
+            .then(data => {
+                votingConstituencySelect.innerHTML = '<option value="">Select Voting Constituency</option>';
+                data.forEach(constituency => {
+                    const option = document.createElement('option');
+                    option.value = constituency.name;
+                    option.textContent = constituency.name;
+                    votingConstituencySelect.appendChild(option);
+                });
+                
+                if (data.length === 0) {
+                    votingConstituencySelect.innerHTML = '<option value="">No constituencies found</option>';
+                }
+            });
+    } else {
+        votingConstituencySelect.innerHTML = '<option value="">Select Voting Region First</option>';
     }
 });
 
