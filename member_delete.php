@@ -49,10 +49,8 @@ try {
     $stmt->bindParam(':member_id', $memberId);
     $stmt->execute();
     
-    // Delete campus patron assignments
-    $stmt = $db->prepare("DELETE FROM campus_patrons WHERE member_id = :member_id");
-    $stmt->bindParam(':member_id', $memberId);
-    $stmt->execute();
+    // Note: Patrons are stored in members table with position='Patron', not in a separate table
+    // No need to delete from campus_patrons as that table doesn't exist
     
     // Delete payment records
     $stmt = $db->prepare("DELETE FROM payments WHERE member_id = :member_id");

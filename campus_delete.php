@@ -54,10 +54,8 @@ try {
     $stmt->bindParam(':campus_id', $campusId);
     $stmt->execute();
     
-    // Delete campus patron assignments
-    $stmt = $db->prepare("DELETE FROM campus_patrons WHERE campus_id = :campus_id");
-    $stmt->bindParam(':campus_id', $campusId);
-    $stmt->execute();
+    // Note: Patrons are stored in members table with position='Patron', not in a separate table
+    // They will be handled by the member count check above
     
     // Delete the campus
     if ($campus->delete($campusId)) {

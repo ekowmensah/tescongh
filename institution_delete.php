@@ -32,14 +32,18 @@ if (!$institutionData) {
     redirect('institutions.php');
 }
 
-// Check if institution has campuses
-$stmt = $db->prepare("SELECT COUNT(*) as count FROM campuses WHERE institution_id = :institution_id");
+// Check if institution has campuses (with detailed debugging)
+$stmt = $db->prepare("SELECT id, name FROM campuses WHERE institution_id = :institution_id");
 $stmt->bindParam(':institution_id', $institutionId);
 $stmt->execute();
-$campusCount = $stmt->fetch()['count'];
+$campuses = $stmt->fetchAll();
+$campusCount = count($campuses);
 
 if ($campusCount > 0) {
-    setFlashMessage('danger', "Cannot delete institution. It has {$campusCount} campus(es) assigned. Please delete campuses first.");
+    // Build detailed error message with campus names
+    $campusNames = array_map(function($c) { return $c['name']; }, $campuses);
+    $campusList = implode(', ', $campusNames);
+    setFlashMessage('danger', "Cannot delete institution. It has {$campusCount} campus(es): {$campusList}. Please delete these campuses first.");
     redirect('institutions.php');
 }
 
