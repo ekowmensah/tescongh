@@ -271,6 +271,12 @@
                     <i class="nav-icon cil-comment-square"></i> SMS
                 </a>
             </li>
+            
+            <li class="nav-item">
+                <a class="nav-link <?php echo basename($_SERVER['PHP_SELF']) == 'gallery.php' ? 'active' : ''; ?>" href="gallery.php">
+                    <i class="nav-icon cil-image"></i> Photo Gallery
+                </a>
+            </li>
             <?php endif; ?>
             
             <li class="nav-item">

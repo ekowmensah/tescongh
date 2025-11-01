@@ -1,3 +1,9 @@
+<?php
+// Include required files for database connection
+require_once 'config/config.php';
+require_once 'config/Database.php';
+require_once 'classes/Gallery.php';
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -249,6 +255,65 @@
             margin-bottom: 2rem;
         }
         
+        /* Gallery Section */
+        .gallery-section {
+            padding: 6rem 0;
+            background: #f9fafb;
+        }
+        
+        .gallery-item {
+            position: relative;
+            overflow: hidden;
+            border-radius: 15px;
+            height: 300px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        
+        .gallery-item:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+        }
+        
+        .gallery-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.5s;
+        }
+        
+        .gallery-item:hover .gallery-img {
+            transform: scale(1.1);
+        }
+        
+        .gallery-overlay {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
+            color: white;
+            padding: 2rem 1.5rem 1.5rem;
+            transform: translateY(100%);
+            transition: transform 0.3s;
+        }
+        
+        .gallery-item:hover .gallery-overlay {
+            transform: translateY(0);
+        }
+        
+        .gallery-overlay h5 {
+            font-size: 1.2rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+        
+        .gallery-overlay p {
+            font-size: 0.9rem;
+            opacity: 0.9;
+            margin: 0;
+        }
+        
         /* Footer */
         .footer {
             background: linear-gradient(135deg, #111827 0%, var(--primary-blue) 100%);
@@ -471,6 +536,42 @@
             </div>
         </div>
     </section>
+    
+    <!-- Gallery Section -->
+    <?php
+    // Database connection already initialized at top of file
+    $database = new Database();
+    $db = $database->getConnection();
+    $gallery = new Gallery($db);
+    $featuredImages = $gallery->getFeatured(6);
+    ?>
+    
+    <?php if (!empty($featuredImages)): ?>
+    <section class="gallery-section">
+        <div class="container">
+            <div class="section-title">
+                <h2>Photo Gallery</h2>
+                <p>Capturing moments from our activities and events</p>
+            </div>
+            
+            <div class="row g-4">
+                <?php foreach ($featuredImages as $img): ?>
+                    <div class="col-md-4 col-sm-6">
+                        <div class="gallery-item">
+                            <img src="assets/images/gallery/<?php echo htmlspecialchars($img['image_path']); ?>" 
+                                 alt="<?php echo htmlspecialchars($img['title']); ?>"
+                                 class="gallery-img">
+                            <div class="gallery-overlay">
+                                <h5><?php echo htmlspecialchars($img['title']); ?></h5>
+                                <p><?php echo htmlspecialchars($img['category']); ?></p>
+                            </div>
+                        </div>
+                    </div>
+                <?php endforeach; ?>
+            </div>
+        </div>
+    </section>
+    <?php endif; ?>
     
     <!-- CTA Section -->
     <section class="cta">
