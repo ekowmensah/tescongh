@@ -26,8 +26,11 @@ $campuses = $campus->getAll();
 // Debug: Check if campuses are loaded
 error_log("Total campuses retrieved: " . count($campuses));
 if (!empty($campuses)) {
-    error_log("First campus: " . json_encode($campuses[0]));
-    error_log("Last campus: " . json_encode($campuses[count($campuses) - 1]));
+    error_log("All campus IDs: " . json_encode(array_column($campuses, 'id')));
+    error_log("All campus names: " . json_encode(array_column($campuses, 'name')));
+    foreach ($campuses as $idx => $camp) {
+        error_log("Campus $idx - ID: {$camp['id']}, Name: {$camp['name']}");
+    }
 }
 if (empty($campuses)) {
     error_log("No campuses found in database");
