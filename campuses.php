@@ -150,4 +150,20 @@ include 'includes/header.php';
     </div>
 </div>
 
+<script>
+// Ensure DataTables initializes correctly
+$(document).ready(function() {
+    if ($('.datatable').length && !$.fn.DataTable.isDataTable('.datatable')) {
+        $('.datatable').DataTable({
+            pageLength: 20,
+            responsive: true,
+            order: [[0, 'asc']],
+            columnDefs: [
+                { orderable: false, targets: -1 } // Disable sorting on Actions column
+            ]
+        });
+    }
+});
+</script>
+
 <?php include 'includes/footer.php'; ?>
