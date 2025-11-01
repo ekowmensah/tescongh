@@ -12,6 +12,24 @@ $db = $database->getConnection();
 
 $member = new Member($db);
 
+// Check user role and redirect regular members to their own profile
+if (hasRole('Member') && !hasAnyRole(['Admin', 'Executive', 'Patron'])) {
+    // Regular members can only view their own profile
+    $currentUserId = $_SESSION['user_id'];
+    $currentMemberQuery = "SELECT id FROM members WHERE user_id = :user_id";
+    $stmt = $db->prepare($currentMemberQuery);
+    $stmt->bindParam(':user_id', $currentUserId);
+    $stmt->execute();
+    $currentMember = $stmt->fetch();
+    
+    if ($currentMember) {
+        redirect('member_view.php?id=' . $currentMember['id']);
+    } else {
+        setFlashMessage('danger', 'Your member profile was not found');
+        redirect('dashboard.php');
+    }
+}
+
 // Handle filters
 $filters = [];
 if (isset($_GET['search']) && !empty($_GET['search'])) {
@@ -39,12 +57,15 @@ include 'includes/header.php';
 
 <div class="row mb-4">
     <div class="col-md-6">
-        <h2>Members</h2>
+        <h2>Members Directory</h2>
+        <p class="text-muted">Browse and manage TESCON members</p>
     </div>
     <div class="col-md-6 text-end">
+        <?php if (hasAnyRole(['Admin', 'Executive'])): ?>
         <a href="member_add.php" class="btn btn-primary">
             <i class="cil-plus"></i> Add Member
         </a>
+        <?php endif; ?>
     </div>
 </div>
 
@@ -137,12 +158,14 @@ include 'includes/header.php';
                                     </span>
                                 </td>
                                 <td class="table-actions">
-                                    <a href="member_view.php?id=<?php echo $m['id']; ?>" class="btn btn-sm btn-info" title="View">
+                                    <a href="member_view.php?id=<?php echo $m['id']; ?>" class="btn btn-sm btn-info" title="View Profile">
                                         <i class="cil-eye"></i>
                                     </a>
+                                    <?php if (hasAnyRole(['Admin', 'Executive'])): ?>
                                     <a href="member_edit.php?id=<?php echo $m['id']; ?>" class="btn btn-sm btn-warning" title="Edit">
                                         <i class="cil-pencil"></i>
                                     </a>
+                                    <?php endif; ?>
                                     <?php if (hasRole('Admin')): ?>
                                         <a href="member_delete.php?id=<?php echo $m['id']; ?>" 
                                            class="btn btn-sm btn-danger" 

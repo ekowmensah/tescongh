@@ -77,7 +77,7 @@ class Payment {
      * Get payment by ID
      */
     public function getById($id) {
-        $query = "SELECT p.*, m.fullname, m.phone, m.email, d.year, d.amount as dues_amount 
+        $query = "SELECT p.*, m.fullname, m.phone, u.email, d.year, d.amount as dues_amount 
                   FROM " . $this->table . " p
                   LEFT JOIN members m ON p.member_id = m.id
                   LEFT JOIN users u ON m.user_id = u.id

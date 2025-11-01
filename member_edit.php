@@ -6,6 +6,7 @@ require_once 'includes/auth.php';
 require_once 'classes/User.php';
 require_once 'classes/Member.php';
 require_once 'classes/Region.php';
+require_once 'classes/VotingRegion.php';
 
 if (!hasAnyRole(['Admin', 'Executive', 'Patron'])) {
     setFlashMessage('danger', 'You do not have permission to access this page');
@@ -20,16 +21,26 @@ $db = $database->getConnection();
 $user = new User($db);
 $member = new Member($db);
 $regionObj = new Region($db);
+$votingRegionObj = new VotingRegion($db);
 
 $regions = $regionObj->getAll();
+$votingRegions = $votingRegionObj->getAll();
 
 // Get member ID
 if (!isset($_GET['id'])) {
     setFlashMessage('danger', 'Member ID not provided');
-    redirect('members.php');
+    redirect('dashboard.php');
 }
 
 $memberId = (int)$_GET['id'];
+
+// Check permissions - only Admin and Executive can edit any member
+// Regular members and Patrons cannot edit profiles
+if (!hasAnyRole(['Admin', 'Executive'])) {
+    setFlashMessage('danger', 'You do not have permission to edit member profiles');
+    redirect('member_view.php?id=' . $memberId);
+}
+
 $memberData = $member->getById($memberId);
 
 if (!$memberData) {
@@ -52,6 +63,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $hails_from_region = sanitize($_POST['hails_from_region']);
     $hails_from_constituency = sanitize($_POST['hails_from_constituency']);
     $npp_position = sanitize($_POST['npp_position']);
+    $voting_region_id = !empty($_POST['voting_region_id']) ? (int)$_POST['voting_region_id'] : null;
+    $voting_constituency_id = !empty($_POST['voting_constituency_id']) ? (int)$_POST['voting_constituency_id'] : null;
     $membership_status = sanitize($_POST['membership_status']);
     
     // Handle photo upload
@@ -83,6 +96,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'hails_from_region' => $hails_from_region,
         'hails_from_constituency' => $hails_from_constituency,
         'npp_position' => $npp_position,
+        'voting_region_id' => $voting_region_id,
+        'voting_constituency_id' => $voting_constituency_id,
         'membership_status' => $membership_status
     ];
     
@@ -291,6 +306,27 @@ include 'includes/header.php';
                         <label class="form-label">NPP Position (if any)</label>
                         <input type="text" class="form-control" name="npp_position" value="<?php echo htmlspecialchars($memberData['npp_position'] ?? ''); ?>">
                     </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Voting Region</label>
+                        <select class="form-select" name="voting_region_id" id="voting_region">
+                            <option value="">Select Voting Region</option>
+                            <?php foreach ($votingRegions as $vr): ?>
+                                <option value="<?php echo $vr['id']; ?>" <?php echo (isset($memberData['voting_region_id']) && $memberData['voting_region_id'] == $vr['id']) ? 'selected' : ''; ?>>
+                                    <?php echo htmlspecialchars($vr['name']); ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                        <small class="text-muted">Where they are registered to vote</small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Voting Constituency</label>
+                        <select class="form-select" name="voting_constituency_id" id="voting_constituency">
+                            <option value="">Select Voting Region First</option>
+                        </select>
+                        <small class="text-muted">Their constituency for voting</small>
+                    </div>
                 </div>
             </div>
             
@@ -427,6 +463,39 @@ document.getElementById('hails_region').addEventListener('change', function() {
             });
     }
 });
+
+// Load voting constituencies when voting region is selected
+document.getElementById('voting_region').addEventListener('change', function() {
+    const votingRegionId = this.value;
+    const votingConstituencySelect = document.getElementById('voting_constituency');
+    
+    if (votingRegionId) {
+        fetch('api/get_voting_constituencies.php?region_id=' + votingRegionId)
+            .then(response => response.text())
+            .then(html => {
+                votingConstituencySelect.innerHTML = html;
+                // Re-select the current value if editing
+                <?php if (isset($memberData['voting_constituency_id'])): ?>
+                votingConstituencySelect.value = '<?php echo $memberData['voting_constituency_id']; ?>';
+                <?php endif; ?>
+            })
+            .catch(error => {
+                console.error('Error loading voting constituencies:', error);
+                votingConstituencySelect.innerHTML = '<option value="">Error loading constituencies</option>';
+            });
+    } else {
+        votingConstituencySelect.innerHTML = '<option value="">Select Voting Region First</option>';
+    }
+});
+
+// Load voting constituencies on page load if voting region is already selected
+window.addEventListener('DOMContentLoaded', function() {
+    const votingRegionSelect = document.getElementById('voting_region');
+    if (votingRegionSelect.value) {
+        votingRegionSelect.dispatchEvent(new Event('change'));
+    }
+});
+
 </script>
 
 <?php include 'includes/footer.php'; ?>

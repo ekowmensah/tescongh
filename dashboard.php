@@ -11,10 +11,27 @@ $database = new Database();
 $db = $database->getConnection();
 
 $member = new Member($db);
-$stats = $member->getStatistics();
 
-// Get recent members
-$recentMembers = $member->getAll(5, 0);
+// Check user role and customize dashboard
+$isRegularMember = hasRole('Member') && !hasAnyRole(['Admin', 'Executive', 'Patron']);
+$canViewStats = hasAnyRole(['Admin', 'Executive', 'Patron']);
+
+// Get statistics only for authorized users
+if ($canViewStats) {
+    $stats = $member->getStatistics();
+    // Get recent members
+    $recentMembers = $member->getAll(5, 0);
+} else {
+    // Regular members see their own profile data
+    $currentUserId = $_SESSION['user_id'];
+    $memberQuery = "SELECT m.*, u.email FROM members m 
+                    LEFT JOIN users u ON m.user_id = u.id 
+                    WHERE m.user_id = :user_id";
+    $stmt = $db->prepare($memberQuery);
+    $stmt->bindParam(':user_id', $currentUserId);
+    $stmt->execute();
+    $currentMemberData = $stmt->fetch();
+}
 
 include 'includes/header.php';
 ?>
@@ -22,9 +39,95 @@ include 'includes/header.php';
 <div class="row">
     <div class="col-12">
         <h2 class="mb-4">Dashboard</h2>
+        <?php if ($isRegularMember): ?>
+            <p class="text-muted">Welcome back, <?php echo htmlspecialchars($currentMemberData['fullname'] ?? 'Member'); ?>!</p>
+        <?php endif; ?>
     </div>
 </div>
 
+<?php if ($isRegularMember): ?>
+<!-- Regular Member Dashboard -->
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <strong>My Profile</strong>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="text-muted small">Full Name</label>
+                        <div><strong><?php echo htmlspecialchars($currentMemberData['fullname']); ?></strong></div>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="text-muted small">Email</label>
+                        <div><strong><?php echo htmlspecialchars($currentMemberData['email']); ?></strong></div>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="text-muted small">Phone</label>
+                        <div><strong><?php echo htmlspecialchars($currentMemberData['phone']); ?></strong></div>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="text-muted small">Institution</label>
+                        <div><strong><?php echo htmlspecialchars($currentMemberData['institution']); ?></strong></div>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="text-muted small">Status</label>
+                        <div>
+                            <span class="badge bg-<?php echo getStatusBadgeClass($currentMemberData['membership_status']); ?>">
+                                <?php echo $currentMemberData['membership_status']; ?>
+                            </span>
+                        </div>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="text-muted small">Member Since</label>
+                        <div><strong><?php echo formatDate($currentMemberData['created_at'], 'd M Y'); ?></strong></div>
+                    </div>
+                </div>
+                <div class="text-center mt-3">
+                    <a href="member_view.php?id=<?php echo $currentMemberData['id']; ?>" class="btn btn-primary">
+                        <i class="cil-user"></i> View Full Profile
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <strong>Quick Actions</strong>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="pay_dues.php" class="btn btn-success btn-lg">
+                        <i class="cil-dollar"></i> Pay Dues
+                    </a>
+                    <a href="payments.php" class="btn btn-outline-primary">
+                        <i class="cil-wallet"></i> Payment History
+                    </a>
+                    <a href="events.php" class="btn btn-outline-secondary">
+                        <i class="cil-calendar"></i> View Events
+                    </a>
+                    <a href="gallery.php" class="btn btn-outline-info">
+                        <i class="cil-image"></i> Gallery
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card mt-3">
+            <div class="card-header">
+                <strong>Announcements</strong>
+            </div>
+            <div class="card-body">
+                <p class="text-muted text-center">No new announcements</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<?php else: ?>
+<!-- Admin/Executive/Patron Dashboard -->
 <div class="row">
     <div class="col-sm-6 col-lg-3">
         <div class="card stat-card primary">
@@ -204,5 +307,6 @@ include 'includes/header.php';
         </div>
     </div>
 </div>
+<?php endif; ?>
 
 <?php include 'includes/footer.php'; ?>

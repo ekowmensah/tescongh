@@ -12,10 +12,28 @@ $db = $database->getConnection();
 
 $payment = new Payment($db);
 
+// Check user role
+$isRegularMember = hasRole('Member') && !hasAnyRole(['Admin', 'Executive', 'Patron']);
+$canViewAll = hasAnyRole(['Admin', 'Executive', 'Patron']);
+
 // Handle filters
 $filters = [];
 if (isset($_GET['status']) && !empty($_GET['status'])) {
     $filters['status'] = sanitize($_GET['status']);
+}
+
+// If regular member, filter to show only their payments
+if ($isRegularMember) {
+    $currentUserId = $_SESSION['user_id'];
+    $memberQuery = "SELECT id FROM members WHERE user_id = :user_id";
+    $stmt = $db->prepare($memberQuery);
+    $stmt->bindParam(':user_id', $currentUserId);
+    $stmt->execute();
+    $currentMember = $stmt->fetch();
+    
+    if ($currentMember) {
+        $filters['member_id'] = $currentMember['id'];
+    }
 }
 
 // Pagination
@@ -28,18 +46,25 @@ $payments = $payment->getAll($recordsPerPage, $offset, $filters);
 $totalPayments = $payment->count($filters);
 $pagination = paginate($totalPayments, $page, $recordsPerPage);
 
-// Get statistics
-$stats = $payment->getStatistics();
+// Get statistics (filtered for regular members)
+$stats = $payment->getStatistics($isRegularMember ? ($currentMember['id'] ?? null) : null);
 
 include 'includes/header.php';
 ?>
 
 <div class="row mb-4">
     <div class="col-md-6">
-        <h2>Payments</h2>
+        <h2><?php echo $isRegularMember ? 'My Payments' : 'Payments'; ?></h2>
+        <?php if ($isRegularMember): ?>
+            <p class="text-muted">View your payment history and pay dues</p>
+        <?php endif; ?>
     </div>
     <div class="col-md-6 text-end">
-        <?php if (hasAnyRole(['Admin', 'Executive'])): ?>
+        <?php if ($isRegularMember): ?>
+            <a href="pay_dues.php" class="btn btn-success btn-lg">
+                <i class="cil-dollar"></i> Pay Dues
+            </a>
+        <?php elseif (hasAnyRole(['Admin', 'Executive'])): ?>
             <a href="payment_add.php" class="btn btn-primary">
                 <i class="cil-plus"></i> Record Payment
             </a>
@@ -51,7 +76,7 @@ include 'includes/header.php';
     <div class="col-md-3">
         <div class="card stat-card success">
             <div class="card-body">
-                <div class="text-medium-emphasis small text-uppercase fw-semibold">Total Collected</div>
+                <div class="text-medium-emphasis small text-uppercase fw-semibold"><?php echo $isRegularMember ? 'Total Paid' : 'Total Collected'; ?></div>
                 <div class="fs-4 fw-semibold text-success"><?php echo formatCurrency($stats['total_amount']); ?></div>
                 <small class="text-muted"><?php echo number_format($stats['total_payments']); ?> payments</small>
             </div>

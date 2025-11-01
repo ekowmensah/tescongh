@@ -15,10 +15,25 @@ $member = new Member($db);
 // Get member ID
 if (!isset($_GET['id'])) {
     setFlashMessage('danger', 'Member ID not provided');
-    redirect('members.php');
+    redirect('dashboard.php');
 }
 
 $memberId = (int)$_GET['id'];
+
+// Check if regular member is trying to view someone else's profile
+if (hasRole('Member') && !hasAnyRole(['Admin', 'Executive', 'Patron'])) {
+    $currentUserId = $_SESSION['user_id'];
+    $checkQuery = "SELECT id FROM members WHERE user_id = :user_id";
+    $checkStmt = $db->prepare($checkQuery);
+    $checkStmt->bindParam(':user_id', $currentUserId);
+    $checkStmt->execute();
+    $currentMember = $checkStmt->fetch();
+    
+    if (!$currentMember || $currentMember['id'] != $memberId) {
+        setFlashMessage('danger', 'You can only view your own profile');
+        redirect('member_view.php?id=' . $currentMember['id']);
+    }
+}
 
 // Get member data with voting information
 $query = "SELECT m.*, u.email, u.role as user_role, u.status as user_status, u.last_login, u.email_verified,
@@ -64,10 +79,13 @@ try {
 }
 
 try {
-    // Check if dues table exists
-    $checkTable = $db->query("SHOW TABLES LIKE 'dues'")->fetch();
+    // Get payment statistics from payments table
+    $checkTable = $db->query("SHOW TABLES LIKE 'payments'")->fetch();
     if ($checkTable) {
-        $duesStmt = $db->prepare("SELECT COUNT(*) as count, SUM(amount) as total FROM dues WHERE member_id = :id AND status = 'Paid'");
+        $duesStmt = $db->prepare("SELECT COUNT(*) as count, SUM(p.amount) as total 
+                                   FROM payments p
+                                   WHERE p.member_id = :id 
+                                   AND p.status = 'completed')");
         $duesStmt->bindParam(':id', $memberId);
         $duesStmt->execute();
         $duesData = $duesStmt->fetch();
