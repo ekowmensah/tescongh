@@ -44,13 +44,15 @@ class Institution {
                   VALUES (:name, :type, :location, :website, :logo, :region_id, :constituency_id, :created_by)";
         $stmt = $this->conn->prepare($query);
         
-        $allowedFields = ['name', 'type', 'location', 'website', 'logo', 'region_id', 'constituency_id', 'created_by'];
-        
-        foreach ($data as $key => $value) {
-            if (in_array($key, $allowedFields)) {
-                $stmt->bindValue(":$key", $value);
-            }
-        }
+        // Bind all required parameters with default values if not provided
+        $stmt->bindValue(':name', $data['name'] ?? '');
+        $stmt->bindValue(':type', $data['type'] ?? '');
+        $stmt->bindValue(':location', $data['location'] ?? '');
+        $stmt->bindValue(':website', $data['website'] ?? null);
+        $stmt->bindValue(':logo', $data['logo'] ?? null);
+        $stmt->bindValue(':region_id', $data['region_id'] ?? null);
+        $stmt->bindValue(':constituency_id', $data['constituency_id'] ?? null);
+        $stmt->bindValue(':created_by', $data['created_by'] ?? null);
         
         if ($stmt->execute()) {
             return ['success' => true, 'id' => $this->conn->lastInsertId()];
