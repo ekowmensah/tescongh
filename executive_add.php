@@ -7,6 +7,7 @@ require_once 'classes/User.php';
 require_once 'classes/Member.php';
 require_once 'classes/Position.php';
 require_once 'classes/Region.php';
+require_once 'classes/VotingRegion.php';
 require_once 'classes/Campus.php';
 
 if (!hasAnyRole(['Admin', 'Executive'])) {
@@ -23,10 +24,12 @@ $user = new User($db);
 $member = new Member($db);
 $position = new Position($db);
 $region = new Region($db);
+$votingRegion = new VotingRegion($db);
 $campus = new Campus($db);
 
 // Get data for dropdowns
 $regions = $region->getAll();
+$votingRegions = $votingRegion->getAll();
 $executivePositions = $position->getExecutivePositions();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -45,6 +48,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $hails_from_region = sanitize($_POST['hails_from_region']);
     $hails_from_constituency = sanitize($_POST['hails_from_constituency']);
     $npp_position = sanitize($_POST['npp_position']);
+    $voting_region_id = !empty($_POST['voting_region_id']) ? (int)$_POST['voting_region_id'] : null;
+    $voting_constituency_id = !empty($_POST['voting_constituency_id']) ? (int)$_POST['voting_constituency_id'] : null;
     $campus_id = !empty($_POST['campus_id']) ? (int)$_POST['campus_id'] : null;
     $position_id = !empty($_POST['position_id']) ? (int)$_POST['position_id'] : null;
     
@@ -81,6 +86,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'hails_from_region' => $hails_from_region,
             'hails_from_constituency' => $hails_from_constituency,
             'npp_position' => $npp_position,
+            'voting_region_id' => $voting_region_id,
+            'voting_constituency_id' => $voting_constituency_id,
             'campus_id' => $campus_id,
             'membership_status' => 'Active'
         ];
@@ -324,6 +331,27 @@ include 'includes/header.php';
                             <label class="form-label">NPP Position (if any)</label>
                             <input type="text" class="form-control" name="npp_position" placeholder="e.g., Constituency Secretary">
                         </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Voting Region</label>
+                            <select class="form-select" name="voting_region_id" id="voting_region">
+                                <option value="">Select Voting Region</option>
+                                <?php foreach ($votingRegions as $vr): ?>
+                                    <option value="<?php echo $vr['id']; ?>">
+                                        <?php echo htmlspecialchars($vr['name']); ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                            <small class="text-muted">Where they are registered to vote</small>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Voting Constituency</label>
+                            <select class="form-select" name="voting_constituency_id" id="voting_constituency">
+                                <option value="">Select Voting Region First</option>
+                            </select>
+                            <small class="text-muted">Their constituency for voting</small>
+                        </div>
                     </div>
                 </div>
                 
@@ -345,5 +373,27 @@ include 'includes/header.php';
 
 <!-- Include the same JavaScript from member_add.php -->
 <script src="js/member_form.js"></script>
+
+<script>
+// Load voting constituencies when voting region is selected
+document.getElementById('voting_region').addEventListener('change', function() {
+    const votingRegionId = this.value;
+    const votingConstituencySelect = document.getElementById('voting_constituency');
+    
+    if (votingRegionId) {
+        fetch('api/get_voting_constituencies.php?region_id=' + votingRegionId)
+            .then(response => response.text())
+            .then(html => {
+                votingConstituencySelect.innerHTML = html;
+            })
+            .catch(error => {
+                console.error('Error loading voting constituencies:', error);
+                votingConstituencySelect.innerHTML = '<option value="">Error loading constituencies</option>';
+            });
+    } else {
+        votingConstituencySelect.innerHTML = '<option value="">Select Voting Region First</option>';
+    }
+});
+</script>
 
 <?php include 'includes/footer.php'; ?>

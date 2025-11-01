@@ -5,11 +5,21 @@ require_once 'includes/functions.php';
 require_once 'classes/User.php';
 require_once 'classes/Member.php';
 require_once 'classes/Region.php';
+require_once 'classes/VotingRegion.php';
 
 // Redirect if already logged in
 if (isLoggedIn()) {
     redirect('dashboard.php');
 }
+
+$database = new Database();
+$db = $database->getConnection();
+
+$regionObj = new Region($db);
+$votingRegionObj = new VotingRegion($db);
+
+$regions = $regionObj->getAll();
+$votingRegions = $votingRegionObj->getAll();
 
 $error = '';
 $success = '';
@@ -30,8 +40,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $region = sanitize($_POST['region']);
     $constituency = sanitize($_POST['constituency']);
     $npp_position = sanitize($_POST['npp_position']);
-    $voting_region = sanitize($_POST['voting_region']);
-    $voting_constituency = sanitize($_POST['voting_constituency']);
+    $voting_region_id = !empty($_POST['voting_region_id']) ? (int)$_POST['voting_region_id'] : null;
+    $voting_constituency_id = !empty($_POST['voting_constituency_id']) ? (int)$_POST['voting_constituency_id'] : null;
     $campus_id = !empty($_POST['campus_id']) ? (int)$_POST['campus_id'] : null;
     
     // Handle photo upload
@@ -78,8 +88,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $user_id = $db->lastInsertId();
                     
                     // Create member profile
-                    $member_query = "INSERT INTO members (user_id, fullname, phone, photo, institution, department, program, year, student_id, position, region, constituency, npp_position, voting_region, voting_constituency, campus_id, membership_status) 
-                                    VALUES (:user_id, :fullname, :phone, :photo, :institution, :department, :program, :year, :student_id, :position, :region, :constituency, :npp_position, :voting_region, :voting_constituency, :campus_id, 'Active')";
+                    $member_query = "INSERT INTO members (user_id, fullname, phone, photo, institution, department, program, year, student_id, position, region, constituency, npp_position, voting_region_id, voting_constituency_id, campus_id, membership_status) 
+                                    VALUES (:user_id, :fullname, :phone, :photo, :institution, :department, :program, :year, :student_id, :position, :region, :constituency, :npp_position, :voting_region_id, :voting_constituency_id, :campus_id, 'Active')";
                     $member_stmt = $db->prepare($member_query);
                     $member_stmt->bindParam(':user_id', $user_id);
                     $member_stmt->bindParam(':fullname', $fullname);
@@ -94,8 +104,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $member_stmt->bindParam(':region', $region);
                     $member_stmt->bindParam(':constituency', $constituency);
                     $member_stmt->bindParam(':npp_position', $npp_position);
-                    $member_stmt->bindParam(':voting_region', $voting_region);
-                    $member_stmt->bindParam(':voting_constituency', $voting_constituency);
+                    $member_stmt->bindParam(':voting_region_id', $voting_region_id);
+                    $member_stmt->bindParam(':voting_constituency_id', $voting_constituency_id);
                     $member_stmt->bindParam(':campus_id', $campus_id);
                     $member_stmt->execute();
                     
@@ -386,11 +396,11 @@ $institutions = $institutions_stmt->fetchAll(PDO::FETCH_COLUMN);
                             
                             <div class="mb-3">
                                 <label class="form-label">Voting Region</label>
-                                <select class="form-select" name="voting_region" id="voting_region">
+                                <select class="form-select" name="voting_region_id" id="voting_region">
                                     <option value="">Select Voting Region</option>
-                                    <?php foreach ($regions as $reg): ?>
-                                        <option value="<?php echo htmlspecialchars($reg['name']); ?>" data-id="<?php echo $reg['id']; ?>">
-                                            <?php echo htmlspecialchars($reg['name']); ?>
+                                    <?php foreach ($votingRegions as $vr): ?>
+                                        <option value="<?php echo $vr['id']; ?>">
+                                            <?php echo htmlspecialchars($vr['name']); ?>
                                         </option>
                                     <?php endforeach; ?>
                                 </select>
@@ -399,7 +409,7 @@ $institutions = $institutions_stmt->fetchAll(PDO::FETCH_COLUMN);
                             
                             <div class="mb-3">
                                 <label class="form-label">Voting Constituency</label>
-                                <select class="form-select" name="voting_constituency" id="voting_constituency">
+                                <select class="form-select" name="voting_constituency_id" id="voting_constituency">
                                     <option value="">Select Voting Region First</option>
                                 </select>
                             </div>
@@ -548,25 +558,18 @@ $institutions = $institutions_stmt->fetchAll(PDO::FETCH_COLUMN);
 
     // Load voting constituencies when voting region is selected
     document.getElementById('voting_region').addEventListener('change', function() {
-        const selectedOption = this.options[this.selectedIndex];
-        const regionId = selectedOption.getAttribute('data-id');
+        const votingRegionId = this.value;
         const votingConstituencySelect = document.getElementById('voting_constituency');
         
-        if (regionId) {
-            fetch('ajax/get_constituencies.php?region_id=' + regionId)
-                .then(response => response.json())
-                .then(data => {
-                    votingConstituencySelect.innerHTML = '<option value="">Select Voting Constituency</option>';
-                    data.forEach(constituency => {
-                        const option = document.createElement('option');
-                        option.value = constituency.name;
-                        option.textContent = constituency.name;
-                        votingConstituencySelect.appendChild(option);
-                    });
-                    
-                    if (data.length === 0) {
-                        votingConstituencySelect.innerHTML = '<option value="">No constituencies found</option>';
-                    }
+        if (votingRegionId) {
+            fetch('api/get_voting_constituencies.php?region_id=' + votingRegionId)
+                .then(response => response.text())
+                .then(html => {
+                    votingConstituencySelect.innerHTML = html;
+                })
+                .catch(error => {
+                    console.error('Error loading voting constituencies:', error);
+                    votingConstituencySelect.innerHTML = '<option value="">Error loading constituencies</option>';
                 });
         } else {
             votingConstituencySelect.innerHTML = '<option value="">Select Voting Region First</option>';

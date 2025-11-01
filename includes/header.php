@@ -239,9 +239,23 @@
                     <i class="nav-icon cil-list"></i> Constituencies
                 </a>
             </li>
-            <?php endif; ?>
             
-            <?php if (hasRole('Admin')): ?>
+            <li class="nav-title">Electoral Data</li>
+            
+            <li class="nav-item">
+                <a class="nav-link <?php echo basename($_SERVER['PHP_SELF']) == 'voting_regions.php' ? 'active' : ''; ?>" href="voting_regions.php">
+                    <i class="nav-icon cil-map"></i> Voting Regions
+                </a>
+            </li>
+            
+            <li class="nav-item">
+                <a class="nav-link <?php echo basename($_SERVER['PHP_SELF']) == 'voting_constituencies.php' ? 'active' : ''; ?>" href="voting_constituencies.php">
+                    <i class="nav-icon cil-location-pin"></i> Voting Constituencies
+                </a>
+            </li>
+            
+            <li class="nav-title">System</li>
+            
             <li class="nav-item">
                 <a class="nav-link <?php echo basename($_SERVER['PHP_SELF']) == 'positions.php' ? 'active' : ''; ?>" href="positions.php">
                     <i class="nav-icon cil-badge"></i> Positions
