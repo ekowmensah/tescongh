@@ -174,10 +174,14 @@ $(document).ready(function() {
     $('.datatable').DataTable({
         pageLength: 20,
         responsive: true,
-        order: [[0, 'asc']],
+        order: [[0, 'desc']], // Show newest first (highest ID)
         columnDefs: [
             { orderable: false, targets: -1 } // Disable sorting on Actions column
-        ]
+        ],
+        // Disable state saving to prevent caching
+        stateSave: false,
+        // Force redraw
+        retrieve: false
     });
 });
 </script>

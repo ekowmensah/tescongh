@@ -47,12 +47,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $newCampusId = $result['id'];
         error_log("New campus created with ID: " . $newCampusId);
         setFlashMessage('success', 'Campus added successfully (ID: ' . $newCampusId . ')');
-        // Add cache busting parameter
-        redirect('campuses.php?refresh=' . time());
+        // Redirect to campuses page
+        redirect('campuses.php');
+        exit(); // Ensure no further code executes
     } else {
         $errorMsg = isset($result['error']) ? $result['error'] : 'Unknown error';
         error_log("Failed to create campus: " . $errorMsg);
         setFlashMessage('danger', 'Failed to add campus: ' . $errorMsg);
+        // Stay on form to show error
     }
 }
 
