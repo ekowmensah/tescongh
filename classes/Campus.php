@@ -56,23 +56,31 @@ class Campus {
      * Create campus
      */
     public function create($data) {
-        $query = "INSERT INTO " . $this->table . " 
-                  (name, institution_id, location, region_id, constituency_id, created_by) 
-                  VALUES (:name, :institution_id, :location, :region_id, :constituency_id, :created_by)";
-        $stmt = $this->conn->prepare($query);
-        
-        // Bind all required parameters with default values if not provided
-        $stmt->bindValue(':name', $data['name'] ?? '');
-        $stmt->bindValue(':institution_id', $data['institution_id'] ?? null);
-        $stmt->bindValue(':location', $data['location'] ?? '');
-        $stmt->bindValue(':region_id', $data['region_id'] ?? null);
-        $stmt->bindValue(':constituency_id', $data['constituency_id'] ?? null);
-        $stmt->bindValue(':created_by', $data['created_by'] ?? null);
-        
-        if ($stmt->execute()) {
-            return ['success' => true, 'id' => $this->conn->lastInsertId()];
+        try {
+            $query = "INSERT INTO " . $this->table . " 
+                      (name, institution_id, location, region_id, constituency_id, created_by) 
+                      VALUES (:name, :institution_id, :location, :region_id, :constituency_id, :created_by)";
+            $stmt = $this->conn->prepare($query);
+            
+            // Bind all required parameters with default values if not provided
+            $stmt->bindValue(':name', $data['name'] ?? '');
+            $stmt->bindValue(':institution_id', $data['institution_id'] ?? null);
+            $stmt->bindValue(':location', $data['location'] ?? '');
+            $stmt->bindValue(':region_id', $data['region_id'] ?? null);
+            $stmt->bindValue(':constituency_id', $data['constituency_id'] ?? null);
+            $stmt->bindValue(':created_by', $data['created_by'] ?? null);
+            
+            if ($stmt->execute()) {
+                $newId = $this->conn->lastInsertId();
+                error_log("Campus inserted successfully with ID: " . $newId);
+                return ['success' => true, 'id' => $newId];
+            }
+            error_log("Campus insert execute returned false");
+            return ['success' => false, 'error' => 'Execute failed'];
+        } catch (PDOException $e) {
+            error_log("Campus insert error: " . $e->getMessage());
+            return ['success' => false, 'error' => $e->getMessage()];
         }
-        return ['success' => false];
     }
 
     /**

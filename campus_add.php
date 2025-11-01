@@ -46,12 +46,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($result['success']) {
         $newCampusId = $result['id'];
         error_log("New campus created with ID: " . $newCampusId);
-        setFlashMessage('success', 'Campus added successfully');
+        setFlashMessage('success', 'Campus added successfully (ID: ' . $newCampusId . ')');
         // Add cache busting parameter
         redirect('campuses.php?refresh=' . time());
     } else {
-        error_log("Failed to create campus");
-        setFlashMessage('danger', 'Failed to add campus');
+        $errorMsg = isset($result['error']) ? $result['error'] : 'Unknown error';
+        error_log("Failed to create campus: " . $errorMsg);
+        setFlashMessage('danger', 'Failed to add campus: ' . $errorMsg);
     }
 }
 
