@@ -20,8 +20,7 @@ class Campus {
                   LEFT JOIN institutions i ON c.institution_id = i.id
                   LEFT JOIN regions r ON c.region_id = r.id
                   LEFT JOIN constituencies co ON c.constituency_id = co.id
-                  GROUP BY c.id
-                  ORDER BY c.id ASC";
+                  ORDER BY c.id DESC";
         $stmt = $this->conn->query($query);
         return $stmt->fetchAll();
     }
@@ -62,9 +61,13 @@ class Campus {
                   VALUES (:name, :institution_id, :location, :region_id, :constituency_id, :created_by)";
         $stmt = $this->conn->prepare($query);
         
-        foreach ($data as $key => $value) {
-            $stmt->bindValue(":$key", $value);
-        }
+        // Bind all required parameters with default values if not provided
+        $stmt->bindValue(':name', $data['name'] ?? '');
+        $stmt->bindValue(':institution_id', $data['institution_id'] ?? null);
+        $stmt->bindValue(':location', $data['location'] ?? '');
+        $stmt->bindValue(':region_id', $data['region_id'] ?? null);
+        $stmt->bindValue(':constituency_id', $data['constituency_id'] ?? null);
+        $stmt->bindValue(':created_by', $data['created_by'] ?? null);
         
         if ($stmt->execute()) {
             return ['success' => true, 'id' => $this->conn->lastInsertId()];

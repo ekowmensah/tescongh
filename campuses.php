@@ -5,6 +5,11 @@ require_once 'includes/functions.php';
 require_once 'includes/auth.php';
 require_once 'classes/Campus.php';
 
+// Prevent page caching
+header("Cache-Control: no-cache, no-store, must-revalidate");
+header("Pragma: no-cache");
+header("Expires: 0");
+
 if (!hasRole('Admin')) {
     setFlashMessage('danger', 'You do not have permission to access this page');
     redirect('dashboard.php');
@@ -19,6 +24,11 @@ $campus = new Campus($db);
 $campuses = $campus->getAll();
 
 // Debug: Check if campuses are loaded
+error_log("Total campuses retrieved: " . count($campuses));
+if (!empty($campuses)) {
+    error_log("First campus: " . json_encode($campuses[0]));
+    error_log("Last campus: " . json_encode($campuses[count($campuses) - 1]));
+}
 if (empty($campuses)) {
     error_log("No campuses found in database");
 }

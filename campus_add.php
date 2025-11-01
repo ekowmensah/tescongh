@@ -35,12 +35,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'created_by' => $_SESSION['user_id']
     ];
     
+    // Debug log
+    error_log("Creating campus with data: " . json_encode($data));
+    
     $result = $campus->create($data);
     
+    // Debug log
+    error_log("Campus create result: " . json_encode($result));
+    
     if ($result['success']) {
+        $newCampusId = $result['id'];
+        error_log("New campus created with ID: " . $newCampusId);
         setFlashMessage('success', 'Campus added successfully');
-        redirect('campuses.php');
+        // Add cache busting parameter
+        redirect('campuses.php?refresh=' . time());
     } else {
+        error_log("Failed to create campus");
         setFlashMessage('danger', 'Failed to add campus');
     }
 }
@@ -61,7 +71,7 @@ include 'includes/header.php';
 
 <div class="row">
     <div class="col-md-8 mx-auto">
-        <form method="POST" action="">
+        <form method="POST" action="" autocomplete="off">
             <div class="card">
                 <div class="card-header">
                     <strong>Campus Details</strong>
@@ -99,12 +109,12 @@ include 'includes/header.php';
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Campus Name <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" name="name" placeholder="e.g., Main Campus" required>
+                            <input type="text" class="form-control" name="name" placeholder="e.g., Main Campus" required autocomplete="off">
                         </div>
                         
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Location <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" name="location" required>
+                            <input type="text" class="form-control" name="location" required autocomplete="off">
                         </div>
                     </div>
                 </div>

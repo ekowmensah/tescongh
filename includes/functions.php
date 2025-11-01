@@ -35,6 +35,10 @@ function hasAnyRole($roles) {
  * Redirect to a page
  */
 function redirect($page) {
+    // Prevent caching of redirects
+    header("Cache-Control: no-cache, no-store, must-revalidate");
+    header("Pragma: no-cache");
+    header("Expires: 0");
     header("Location: " . APP_URL . "/" . $page);
     exit();
 }
