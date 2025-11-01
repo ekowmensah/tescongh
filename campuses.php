@@ -37,7 +37,9 @@ if (empty($campuses)) {
 }
 
 // Get member and executive counts for each campus
-foreach ($campuses as &$c) {
+foreach ($campuses as $key => &$c) {
+    error_log("Processing campus $key - ID: {$c['id']}, Name: {$c['name']}");
+    
     // Get total members
     $memberQuery = "SELECT COUNT(*) as total FROM members WHERE campus_id = :campus_id";
     $memberStmt = $db->prepare($memberQuery);
@@ -61,7 +63,10 @@ foreach ($campuses as &$c) {
     $patronStmt->execute();
     $patronCount = $patronStmt->fetch();
     $c['patron_count'] = $patronCount['total'];
+    
+    error_log("Campus {$c['id']} counts - Members: {$c['member_count']}, Execs: {$c['executive_count']}, Patrons: {$c['patron_count']}");
 }
+unset($c); // Break the reference
 
 include 'includes/header.php';
 ?>
@@ -108,7 +113,12 @@ include 'includes/header.php';
                             </td>
                         </tr>
                     <?php else: ?>
-                    <?php foreach ($campuses as $c): ?>
+                    <?php 
+                    error_log("About to render " . count($campuses) . " campuses");
+                    error_log("Campus IDs at render: " . json_encode(array_column($campuses, 'id')));
+                    foreach ($campuses as $c): 
+                        error_log("Rendering row for campus ID: {$c['id']}, Name: {$c['name']}");
+                    ?>
                         <tr>
                             <td><?php echo $c['id']; ?></td>
                             <td><strong><?php echo htmlspecialchars($c['name']); ?></strong></td>
