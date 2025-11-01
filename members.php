@@ -93,7 +93,6 @@ include 'includes/header.php';
                     <tr>
                         <th>ID</th>
                         <th>Name</th>
-                        <th>Email</th>
                         <th>Phone</th>
                         <th>Institution</th>
                         <th>Position</th>
@@ -104,7 +103,7 @@ include 'includes/header.php';
                 <tbody>
                     <?php if (empty($members)): ?>
                         <tr>
-                            <td colspan="8" class="text-center text-muted">No members found</td>
+                            <td colspan="7" class="text-center text-muted">No members found</td>
                         </tr>
                     <?php else: ?>
                         <?php foreach ($members as $m): ?>
@@ -125,7 +124,6 @@ include 'includes/header.php';
                                         <strong><?php echo htmlspecialchars($m['fullname']); ?></strong>
                                     </div>
                                 </td>
-                                <td><?php echo htmlspecialchars($m['email']); ?></td>
                                 <td><?php echo htmlspecialchars($m['phone']); ?></td>
                                 <td><?php echo htmlspecialchars($m['institution']); ?></td>
                                 <td>
