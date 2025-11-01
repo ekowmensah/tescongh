@@ -193,7 +193,7 @@ include 'includes/header.php';
                                             <i class="cil-user"></i>
                                         </a>
                                         <?php if (hasRole('Admin')): ?>
-                                        <a href="?remove=<?php echo $exec['assignment_id']; ?>" 
+                                        <a href="campus_executives.php?remove=<?php echo $exec['assignment_id']; ?><?php echo isset($_GET['campus_id']) ? '&campus_id=' . (int)$_GET['campus_id'] : ''; ?>" 
                                            class="btn btn-sm btn-danger" 
                                            title="Remove from Position"
                                            onclick="return confirm('Remove this executive from their position?')">

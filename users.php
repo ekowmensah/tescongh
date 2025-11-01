@@ -141,7 +141,7 @@ include 'includes/header.php';
                                         <i class="cil-pencil"></i>
                                     </a>
                                     <?php if ($u['id'] !== $_SESSION['user_id']): ?>
-                                        <a href="?delete=<?php echo $u['id']; ?>" 
+                                        <a href="users.php?delete=<?php echo $u['id']; ?>" 
                                            class="btn btn-sm btn-danger" 
                                            title="Delete"
                                            onclick="return confirmDelete('Are you sure you want to delete this user?')">

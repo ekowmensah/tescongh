@@ -89,7 +89,7 @@ include 'includes/header.php';
                             <td><?php echo formatDate($r['created_at'], 'd M Y'); ?></td>
                             <td class="table-actions">
                                 <?php if (hasRole('Admin')): ?>
-                                    <a href="?delete=<?php echo $r['id']; ?>" 
+                                    <a href="regions.php?delete=<?php echo $r['id']; ?>" 
                                        class="btn btn-sm btn-danger" 
                                        onclick="return confirmDelete('Are you sure you want to delete this region?')">
                                         <i class="cil-trash"></i>

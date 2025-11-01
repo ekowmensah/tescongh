@@ -112,7 +112,7 @@ include 'includes/header.php';
                                     <a href="event_edit.php?id=<?php echo $event['id']; ?>" class="btn btn-sm btn-outline-warning">
                                         <i class="cil-pencil"></i> Edit
                                     </a>
-                                    <a href="?delete=<?php echo $event['id']; ?>" 
+                                    <a href="events.php?delete=<?php echo $event['id']; ?>" 
                                        class="btn btn-sm btn-outline-danger"
                                        onclick="return confirmDelete('Are you sure you want to delete this event?')">
                                         <i class="cil-trash"></i> Delete

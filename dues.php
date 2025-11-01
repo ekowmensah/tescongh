@@ -108,7 +108,7 @@ include 'includes/header.php';
                                         </a>
                                     <?php endif; ?>
                                     <?php if (hasRole('Admin')): ?>
-                                        <a href="?delete=<?php echo $d['id']; ?>" 
+                                        <a href="dues.php?delete=<?php echo $d['id']; ?>" 
                                            class="btn btn-sm btn-danger" 
                                            title="Delete"
                                            onclick="return confirmDelete('Are you sure you want to delete this dues record?')">

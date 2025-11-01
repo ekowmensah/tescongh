@@ -180,7 +180,7 @@ include 'includes/header.php';
                                         <i class="cil-pencil"></i>
                                     </a>
                                     <?php if (hasRole('Admin')): ?>
-                                        <a href="?delete=<?php echo $c['id']; ?>" 
+                                        <a href="constituencies.php?delete=<?php echo $c['id']; ?>" 
                                            class="btn btn-sm btn-danger" 
                                            title="Delete"
                                            onclick="return confirmDelete('Are you sure you want to delete this constituency?')">

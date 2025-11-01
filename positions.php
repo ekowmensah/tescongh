@@ -136,12 +136,12 @@ include 'includes/header.php';
                                        title="Edit">
                                         <i class="cil-pencil"></i>
                                     </a>
-                                    <a href="?toggle=<?php echo $pos['id']; ?>" 
+                                    <a href="positions.php?toggle=<?php echo $pos['id']; ?>" 
                                        class="btn btn-sm btn-<?php echo $pos['is_active'] ? 'secondary' : 'success'; ?>" 
                                        title="<?php echo $pos['is_active'] ? 'Deactivate' : 'Activate'; ?>">
                                         <i class="cil-<?php echo $pos['is_active'] ? 'ban' : 'check'; ?>"></i>
                                     </a>
-                                    <a href="?delete=<?php echo $pos['id']; ?>" 
+                                    <a href="positions.php?delete=<?php echo $pos['id']; ?>" 
                                        class="btn btn-sm btn-danger" 
                                        title="Delete"
                                        onclick="return confirmDelete('Are you sure you want to delete this position?')">
