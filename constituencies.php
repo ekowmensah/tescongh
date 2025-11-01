@@ -51,10 +51,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 // Handle delete
 if (isset($_GET['delete']) && hasRole('Admin')) {
     $id = (int)$_GET['delete'];
-    if ($constituency->delete($id)) {
-        setFlashMessage('success', 'Constituency deleted successfully');
+    
+    // Check if constituency is being used by institutions
+    $stmt = $db->prepare("SELECT COUNT(*) as count FROM institutions WHERE constituency_id = :id");
+    $stmt->bindParam(':id', $id);
+    $stmt->execute();
+    $institutionCount = $stmt->fetch()['count'];
+    
+    // Check if constituency is being used by campuses
+    $stmt = $db->prepare("SELECT COUNT(*) as count FROM campuses WHERE constituency_id = :id");
+    $stmt->bindParam(':id', $id);
+    $stmt->execute();
+    $campusCount = $stmt->fetch()['count'];
+    
+    if ($institutionCount > 0 || $campusCount > 0) {
+        $message = "Cannot delete constituency. It is being used by ";
+        $parts = [];
+        if ($institutionCount > 0) $parts[] = "{$institutionCount} institution(s)";
+        if ($campusCount > 0) $parts[] = "{$campusCount} campus(es)";
+        $message .= implode(' and ', $parts) . ". Please reassign or remove them first.";
+        setFlashMessage('danger', $message);
     } else {
-        setFlashMessage('danger', 'Failed to delete constituency. It may be linked to other records.');
+        if ($constituency->delete($id)) {
+            setFlashMessage('success', 'Constituency deleted successfully');
+        } else {
+            setFlashMessage('danger', 'Failed to delete constituency.');
+        }
     }
     redirect('constituencies.php');
 }

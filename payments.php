@@ -166,6 +166,14 @@ include 'includes/header.php';
                                     <a href="payment_view.php?id=<?php echo $p['id']; ?>" class="btn btn-sm btn-info" title="View">
                                         <i class="cil-eye"></i>
                                     </a>
+                                    <?php if (hasRole('Admin')): ?>
+                                        <a href="payment_delete.php?id=<?php echo $p['id']; ?>" 
+                                           class="btn btn-sm btn-danger" 
+                                           title="Delete"
+                                           onclick="return confirmDelete('Are you sure you want to delete this payment record?')">
+                                            <i class="cil-trash"></i>
+                                        </a>
+                                    <?php endif; ?>
                                 </td>
                             </tr>
                         <?php endforeach; ?>

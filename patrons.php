@@ -171,6 +171,12 @@ include 'includes/header.php';
                                        title="Edit">
                                         <i class="cil-pencil"></i>
                                     </a>
+                                    <a href="member_delete.php?id=<?php echo $patron['id']; ?>" 
+                                       class="btn btn-sm btn-danger" 
+                                       title="Delete"
+                                       onclick="return confirmDelete('Are you sure you want to delete this patron?')">
+                                        <i class="cil-trash"></i>
+                                    </a>
                                     <?php endif; ?>
                                 </td>
                             </tr>

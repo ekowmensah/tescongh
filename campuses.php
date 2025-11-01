@@ -133,6 +133,12 @@ include 'includes/header.php';
                                        title="Edit">
                                         <i class="cil-pencil"></i>
                                     </a>
+                                    <a href="campus_delete.php?id=<?php echo $c['id']; ?>" 
+                                       class="btn btn-sm btn-danger" 
+                                       title="Delete"
+                                       onclick="return confirmDelete('Are you sure you want to delete this campus? This will affect all associated members and executives.')">
+                                        <i class="cil-trash"></i>
+                                    </a>
                                 <?php endif; ?>
                             </td>
                         </tr>

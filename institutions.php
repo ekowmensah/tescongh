@@ -74,6 +74,12 @@ include 'includes/header.php';
                                     <a href="institution_edit.php?id=<?php echo $inst['id']; ?>" class="btn btn-sm btn-warning" title="Edit">
                                         <i class="cil-pencil"></i>
                                     </a>
+                                    <a href="institution_delete.php?id=<?php echo $inst['id']; ?>" 
+                                       class="btn btn-sm btn-danger" 
+                                       title="Delete"
+                                       onclick="return confirmDelete('Are you sure you want to delete this institution? This will affect all associated campuses.')">
+                                        <i class="cil-trash"></i>
+                                    </a>
                                 <?php endif; ?>
                             </td>
                         </tr>
