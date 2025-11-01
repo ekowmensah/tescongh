@@ -150,20 +150,24 @@ include 'includes/header.php';
     </div>
 </div>
 
+<?php include 'includes/footer.php'; ?>
+
 <script>
-// Ensure DataTables initializes correctly
+// Ensure DataTables initializes correctly - placed after footer to ensure jQuery is loaded
 $(document).ready(function() {
-    if ($('.datatable').length && !$.fn.DataTable.isDataTable('.datatable')) {
-        $('.datatable').DataTable({
-            pageLength: 20,
-            responsive: true,
-            order: [[0, 'asc']],
-            columnDefs: [
-                { orderable: false, targets: -1 } // Disable sorting on Actions column
-            ]
-        });
+    // Destroy any existing DataTable instance first
+    if ($.fn.DataTable.isDataTable('.datatable')) {
+        $('.datatable').DataTable().destroy();
     }
+    
+    // Initialize DataTable
+    $('.datatable').DataTable({
+        pageLength: 20,
+        responsive: true,
+        order: [[0, 'asc']],
+        columnDefs: [
+            { orderable: false, targets: -1 } // Disable sorting on Actions column
+        ]
+    });
 });
 </script>
-
-<?php include 'includes/footer.php'; ?>
