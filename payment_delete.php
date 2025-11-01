@@ -6,7 +6,10 @@ require_once 'includes/auth.php';
 require_once 'classes/Payment.php';
 
 // Only admins can delete payments
-requireRole('Admin');
+if (!hasRole('Admin')) {
+    setFlashMessage('danger', 'You do not have permission to perform this action');
+    redirect('payments.php');
+}
 
 $database = new Database();
 $db = $database->getConnection();

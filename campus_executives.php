@@ -14,6 +14,37 @@ $pageTitle = 'Campus Executives';
 $database = new Database();
 $db = $database->getConnection();
 
+// Handle remove executive
+if (isset($_GET['remove']) && hasRole('Admin')) {
+    $assignmentId = (int)$_GET['remove'];
+    try {
+        // Update the executive assignment to mark as not current
+        $stmt = $db->prepare("UPDATE campus_executives SET is_current = 0 WHERE id = :id");
+        $stmt->bindParam(':id', $assignmentId);
+        if ($stmt->execute()) {
+            // Update member position back to Member
+            $stmt = $db->prepare("UPDATE members m 
+                                  INNER JOIN campus_executives ce ON m.id = ce.member_id 
+                                  SET m.position = 'Member' 
+                                  WHERE ce.id = :id");
+            $stmt->bindParam(':id', $assignmentId);
+            $stmt->execute();
+            
+            setFlashMessage('success', 'Executive removed from position successfully');
+        } else {
+            setFlashMessage('danger', 'Failed to remove executive');
+        }
+    } catch (Exception $e) {
+        error_log("Executive remove error: " . $e->getMessage());
+        setFlashMessage('danger', 'Failed to remove executive');
+    }
+    $redirectUrl = 'campus_executives.php';
+    if (isset($_GET['campus_id'])) {
+        $redirectUrl .= '?campus_id=' . (int)$_GET['campus_id'];
+    }
+    redirect($redirectUrl);
+}
+
 // Get filter
 $filterCampusId = isset($_GET['campus_id']) ? (int)$_GET['campus_id'] : null;
 
@@ -46,7 +77,7 @@ $query = "SELECT
           INNER JOIN positions p ON ce.position_id = p.id
           INNER JOIN campuses c ON ce.campus_id = c.id
           INNER JOIN institutions i ON c.institution_id = i.id
-          WHERE 1=1";
+          WHERE ce.is_current = 1";
 
 if ($filterCampusId) {
     $query .= " AND ce.campus_id = :campus_id";
