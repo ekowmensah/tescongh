@@ -80,6 +80,25 @@
             animation: fadeInUp 1s ease 0.4s both;
         }
         
+        .hero-image-container {
+            position: relative;
+            animation: fadeInRight 1s ease 0.6s both;
+        }
+        
+        .hero-image {
+            width: 100%;
+            max-width: 500px;
+            height: auto;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            border: 5px solid rgba(255,255,255,0.2);
+            transition: transform 0.3s ease;
+        }
+        
+        .hero-image:hover {
+            transform: scale(1.05);
+        }
+        
         .btn-hero {
             padding: 1rem 2.5rem;
             font-size: 1.1rem;
@@ -295,6 +314,17 @@
             }
         }
         
+        @keyframes fadeInRight {
+            from {
+                opacity: 0;
+                transform: translateX(50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+        
         /* Responsive */
         @media (max-width: 768px) {
             .hero h1 {
@@ -330,8 +360,8 @@
                     </div>
                 </div>
                 <div class="col-lg-5 text-center d-none d-lg-block">
-                    <div style="font-size: 15rem; opacity: 0.1;">
-                        <i class="cil-education"></i>
+                    <div class="hero-image-container">
+                        <img src="assets/images/leadership/team.jpg" alt="TESCON Leadership Team" class="hero-image">
                     </div>
                 </div>
             </div>
