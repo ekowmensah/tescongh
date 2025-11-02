@@ -38,8 +38,47 @@ $search = isset($_GET['search']) ? sanitize($_GET['search']) : '';
 $recordsPerPage = RECORDS_PER_PAGE;
 $offset = ($page - 1) * $recordsPerPage;
 
-$users = $user->getAllUsers($recordsPerPage, $offset, $search);
-$totalUsers = $user->countUsers($search);
+// Get only Admin users with member names
+$query = "SELECT u.id, u.email, u.role, u.status, u.email_verified, u.phone_verified, u.last_login, u.created_at,
+              m.fullname as member_name
+          FROM users u
+          LEFT JOIN members m ON u.id = m.user_id
+          WHERE u.role = 'Admin'";
+
+if (!empty($search)) {
+    $query .= " AND (u.email LIKE :search OR m.fullname LIKE :search)";
+}
+
+$query .= " ORDER BY u.created_at DESC LIMIT :limit OFFSET :offset";
+
+$stmt = $db->prepare($query);
+
+if (!empty($search)) {
+    $searchParam = "%$search%";
+    $stmt->bindParam(':search', $searchParam);
+}
+
+$stmt->bindParam(':limit', $recordsPerPage, PDO::PARAM_INT);
+$stmt->bindParam(':offset', $offset, PDO::PARAM_INT);
+$stmt->execute();
+$users = $stmt->fetchAll();
+
+// Count Admin users
+$countQuery = "SELECT COUNT(*) as total FROM users u WHERE u.role = 'Admin'";
+
+if (!empty($search)) {
+    $countQuery .= " AND (u.email LIKE :search OR EXISTS (SELECT 1 FROM members m WHERE m.user_id = u.id AND m.fullname LIKE :search))";
+}
+
+$countStmt = $db->prepare($countQuery);
+
+if (!empty($search)) {
+    $searchParam = "%$search%";
+    $countStmt->bindParam(':search', $searchParam);
+}
+
+$countStmt->execute();
+$totalUsers = $countStmt->fetch()['total'];
 $pagination = paginate($totalUsers, $page, $recordsPerPage);
 
 include 'includes/header.php';
@@ -47,7 +86,7 @@ include 'includes/header.php';
 
 <div class="row mb-4">
     <div class="col-md-6">
-        <h2>User Management</h2>
+        <h2>Admin Users</h2>
     </div>
     <div class="col-md-6 text-end">
         <a href="user_add.php" class="btn btn-primary">
@@ -63,7 +102,7 @@ include 'includes/header.php';
     <div class="card-body">
         <form method="GET" action="" class="row g-3">
             <div class="col-md-10">
-                <input type="text" class="form-control" name="search" placeholder="Search by email..." value="<?php echo htmlspecialchars($search); ?>">
+                <input type="text" class="form-control" name="search" placeholder="Search by name or email..." value="<?php echo htmlspecialchars($search); ?>">
             </div>
             <div class="col-md-2">
                 <button type="submit" class="btn btn-primary w-100">Search</button>
@@ -74,8 +113,8 @@ include 'includes/header.php';
 
 <div class="card">
     <div class="card-header">
-        <strong>Users List</strong>
-        <span class="badge bg-primary ms-2"><?php echo number_format($totalUsers); ?> Total</span>
+        <strong>Admin Users List</strong>
+        <span class="badge bg-danger ms-2"><?php echo number_format($totalUsers); ?> Admins</span>
     </div>
     <div class="card-body">
         <div class="table-responsive">
@@ -83,8 +122,8 @@ include 'includes/header.php';
                 <thead>
                     <tr>
                         <th>ID</th>
+                        <th>Name</th>
                         <th>Email</th>
-                        <th>Role</th>
                         <th>Status</th>
                         <th>Email Verified</th>
                         <th>Phone Verified</th>
@@ -96,22 +135,20 @@ include 'includes/header.php';
                 <tbody>
                     <?php if (empty($users)): ?>
                         <tr>
-                            <td colspan="9" class="text-center text-muted">No users found</td>
+                            <td colspan="9" class="text-center text-muted">No admin users found</td>
                         </tr>
                     <?php else: ?>
                         <?php foreach ($users as $u): ?>
                             <tr>
                                 <td><?php echo $u['id']; ?></td>
                                 <td>
-                                    <strong><?php echo htmlspecialchars($u['email']); ?></strong>
+                                    <strong><?php echo htmlspecialchars($u['member_name'] ?? 'N/A'); ?></strong>
                                     <?php if ($u['id'] == $_SESSION['user_id']): ?>
-                                        <span class="badge bg-info">You</span>
+                                        <span class="badge bg-info ms-1">You</span>
                                     <?php endif; ?>
                                 </td>
                                 <td>
-                                    <span class="badge bg-<?php echo $u['role'] == 'Admin' ? 'danger' : ($u['role'] == 'Executive' ? 'warning' : 'secondary'); ?>">
-                                        <?php echo $u['role']; ?>
-                                    </span>
+                                    <?php echo htmlspecialchars($u['email']); ?>
                                 </td>
                                 <td>
                                     <span class="badge bg-<?php echo getStatusBadgeClass($u['status']); ?>">
