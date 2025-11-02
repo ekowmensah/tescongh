@@ -40,12 +40,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $voting_constituency_id = !empty($_POST['voting_constituency_id']) ? (int)$_POST['voting_constituency_id'] : null;
     $campus_id = !empty($_POST['campus_id']) ? (int)$_POST['campus_id'] : null;
     
-    // Handle photo upload
+    // Check if student ID already exists
+    $check_query = "SELECT id FROM members WHERE student_id = :student_id";
+    $check_stmt = $db->prepare($check_query);
+    $check_stmt->bindParam(':student_id', $student_id);
+    $check_stmt->execute();
+    
+    if ($check_stmt->rowCount() > 0) {
+        setFlashMessage('danger', 'Student ID already exists. Please use a different one.');
+        redirect('member_add.php');
+    }
+    
+    // Handle photo upload with automatic passport size cropping
     $photo = null;
     if (isset($_FILES['photo']) && $_FILES['photo']['error'] === UPLOAD_ERR_OK) {
-        $uploadResult = uploadFile($_FILES['photo'], 'uploads/');
+        $uploadResult = uploadPassportPhoto($_FILES['photo'], 'uploads/');
         if ($uploadResult['success']) {
             $photo = $uploadResult['filename'];
+        } else {
+            setFlashMessage('warning', 'Member created but photo upload failed: ' . $uploadResult['message']);
         }
     }
     
@@ -131,6 +144,7 @@ include 'includes/header.php';
                             <label class="form-label">Student ID <span class="text-danger">*</span></label>
                             <input type="text" class="form-control" name="student_id" id="student_id" required>
                             <small class="text-muted"><strong>Important:</strong> This will be used for login</small>
+                            <div id="student-id-feedback" class="invalid-feedback"></div>
                         </div>
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Password <span class="text-danger">*</span></label>
@@ -141,6 +155,7 @@ include 'includes/header.php';
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Profile Photo</label>
                             <input type="file" class="form-control" name="photo" accept="image/*">
+                            <small class="text-muted">Image will be automatically cropped to passport size (600x600px)</small>
                         </div>
                     </div>
                 </div>
@@ -274,6 +289,65 @@ include 'includes/header.php';
 </form>
 
 <script>
+// Real-time Student ID Validation with Database Check
+const studentIdInput = document.getElementById('student_id');
+const studentIdFeedback = document.getElementById('student-id-feedback');
+let studentIdCheckTimeout;
+
+studentIdInput.addEventListener('input', function() {
+    const studentId = this.value.trim();
+    
+    // Clear previous timeout
+    clearTimeout(studentIdCheckTimeout);
+    
+    if (studentId === '') {
+        this.classList.remove('is-valid', 'is-invalid');
+        studentIdFeedback.textContent = '';
+        return;
+    }
+    
+    if (studentId.length < 3) {
+        this.classList.remove('is-valid');
+        this.classList.add('is-invalid');
+        studentIdFeedback.textContent = 'Student ID must be at least 3 characters';
+        studentIdFeedback.style.display = 'block';
+        studentIdFeedback.style.color = '#dc3545';
+        return;
+    }
+    
+    // Show checking message
+    this.classList.remove('is-valid', 'is-invalid');
+    studentIdFeedback.textContent = 'Checking availability...';
+    studentIdFeedback.style.display = 'block';
+    studentIdFeedback.style.color = '#6c757d';
+    
+    // Check database after 500ms delay (debounce)
+    studentIdCheckTimeout = setTimeout(() => {
+        fetch('ajax/check_student_id.php?student_id=' + encodeURIComponent(studentId))
+            .then(response => response.json())
+            .then(data => {
+                if (data.exists) {
+                    studentIdInput.classList.remove('is-valid');
+                    studentIdInput.classList.add('is-invalid');
+                    studentIdFeedback.textContent = '✗ ' + data.message;
+                    studentIdFeedback.style.color = '#dc3545';
+                    studentIdFeedback.style.display = 'block';
+                } else {
+                    studentIdInput.classList.remove('is-invalid');
+                    studentIdInput.classList.add('is-valid');
+                    studentIdFeedback.textContent = '✓ ' + data.message;
+                    studentIdFeedback.style.color = '#28a745';
+                    studentIdFeedback.style.display = 'block';
+                }
+            })
+            .catch(error => {
+                console.error('Error checking student ID:', error);
+                studentIdFeedback.textContent = 'Could not verify student ID';
+                studentIdFeedback.style.color = '#dc3545';
+            });
+    }, 500);
+});
+
 // Real-time Phone Number Validation with Database Check
 const phoneInput = document.getElementById('phone');
 const phoneFeedback = document.getElementById('phone-feedback');
@@ -372,11 +446,25 @@ passwordInput.addEventListener('input', function() {
 
 // Form Submission Validation
 document.querySelector('form').addEventListener('submit', function(e) {
+    const studentId = studentIdInput.value.trim();
     const phone = phoneInput.value.trim();
     const password = passwordInput.value;
     
     let isValid = true;
     let errorMessage = '';
+    
+    // Validate student ID
+    if (studentId.length < 3) {
+        isValid = false;
+        errorMessage += 'Student ID must be at least 3 characters.\n';
+        studentIdInput.classList.add('is-invalid');
+    }
+    
+    // Check if student ID has invalid class (already exists)
+    if (studentIdInput.classList.contains('is-invalid')) {
+        isValid = false;
+        errorMessage += 'Student ID already exists or is invalid.\n';
+    }
     
     // Validate phone
     if (phone.length !== 10 || !phone.startsWith('0')) {

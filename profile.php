@@ -17,6 +17,32 @@ $member = new Member($db);
 $userData = $user->getUserById($_SESSION['user_id']);
 $memberData = $member->getByUserId($_SESSION['user_id']);
 
+// Fetch voting region and constituency names if IDs exist
+$votingRegionName = '';
+$votingConstituencyName = '';
+
+if (!empty($memberData['voting_region_id'])) {
+    $vrQuery = "SELECT name FROM voting_regions WHERE id = :id";
+    $vrStmt = $db->prepare($vrQuery);
+    $vrStmt->bindParam(':id', $memberData['voting_region_id']);
+    $vrStmt->execute();
+    $vrResult = $vrStmt->fetch();
+    if ($vrResult) {
+        $votingRegionName = $vrResult['name'];
+    }
+}
+
+if (!empty($memberData['voting_constituency_id'])) {
+    $vcQuery = "SELECT name FROM voting_constituencies WHERE id = :id";
+    $vcStmt = $db->prepare($vcQuery);
+    $vcStmt->bindParam(':id', $memberData['voting_constituency_id']);
+    $vcStmt->execute();
+    $vcResult = $vcStmt->fetch();
+    if ($vcResult) {
+        $votingConstituencyName = $vcResult['name'];
+    }
+}
+
 include 'includes/header.php';
 ?>
 
@@ -165,15 +191,19 @@ include 'includes/header.php';
                         <div class="col-sm-8"><?php echo htmlspecialchars($memberData['constituency']); ?></div>
                     </div>
                     
-                    <div class="row mb-3">
-                        <div class="col-sm-4"><strong>Hails From Region:</strong></div>
-                        <div class="col-sm-8"><?php echo htmlspecialchars($memberData['hails_from_region']); ?></div>
-                    </div>
+                    <?php if (!empty($votingRegionName)): ?>
+                        <div class="row mb-3">
+                            <div class="col-sm-4"><strong>Voting Region:</strong></div>
+                            <div class="col-sm-8"><?php echo htmlspecialchars($votingRegionName); ?></div>
+                        </div>
+                    <?php endif; ?>
                     
-                    <div class="row mb-3">
-                        <div class="col-sm-4"><strong>Hails From Constituency:</strong></div>
-                        <div class="col-sm-8"><?php echo htmlspecialchars($memberData['hails_from_constituency']); ?></div>
-                    </div>
+                    <?php if (!empty($votingConstituencyName)): ?>
+                        <div class="row mb-3">
+                            <div class="col-sm-4"><strong>Voting Constituency:</strong></div>
+                            <div class="col-sm-8"><?php echo htmlspecialchars($votingConstituencyName); ?></div>
+                        </div>
+                    <?php endif; ?>
                     
                     <?php if (!empty($memberData['npp_position'])): ?>
                         <div class="row mb-3">

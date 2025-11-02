@@ -380,7 +380,7 @@ include 'includes/header.php';
             <ul class="pagination justify-content-center">
                 <?php if ($page > 1): ?>
                     <li class="page-item">
-                        <a class="page-link" href="?page=<?php echo ($page - 1) . buildFilterQuery(); ?>">Previous</a>
+                        <a class="page-link" href="register.php?page=<?php echo ($page - 1) . buildFilterQuery(); ?>">Previous</a>
                     </li>
                 <?php endif; ?>
                 
@@ -391,13 +391,13 @@ include 'includes/header.php';
                 for ($i = $start_page; $i <= $end_page; $i++):
                 ?>
                     <li class="page-item <?php echo $i === $page ? 'active' : ''; ?>">
-                        <a class="page-link" href="?page=<?php echo $i . buildFilterQuery(); ?>"><?php echo $i; ?></a>
+                        <a class="page-link" href="register.php?page=<?php echo $i . buildFilterQuery(); ?>"><?php echo $i; ?></a>
                     </li>
                 <?php endfor; ?>
                 
                 <?php if ($page < $total_pages): ?>
                     <li class="page-item">
-                        <a class="page-link" href="?page=<?php echo ($page + 1) . buildFilterQuery(); ?>">Next</a>
+                        <a class="page-link" href="register.php?page=<?php echo ($page + 1) . buildFilterQuery(); ?>">Next</a>
                     </li>
                 <?php endif; ?>
             </ul>

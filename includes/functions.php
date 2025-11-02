@@ -157,6 +157,121 @@ function uploadFile($file, $directory = 'uploads/') {
 }
 
 /**
+ * Upload and crop image to passport size
+ * Passport size: 2x2 inches at 300 DPI = 600x600 pixels
+ */
+function uploadPassportPhoto($file, $directory = 'uploads/') {
+    if (!isset($file) || $file['error'] !== UPLOAD_ERR_OK) {
+        return ['success' => false, 'message' => 'No file uploaded or upload error'];
+    }
+
+    $fileExtension = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+    $allowedImageTypes = ['jpg', 'jpeg', 'png', 'gif'];
+    
+    if (!in_array($fileExtension, $allowedImageTypes)) {
+        return ['success' => false, 'message' => 'Invalid image type. Only JPG, PNG, and GIF allowed'];
+    }
+
+    if ($file['size'] > MAX_FILE_SIZE) {
+        return ['success' => false, 'message' => 'File size exceeds limit'];
+    }
+
+    // Create directory if it doesn't exist
+    if (!is_dir($directory)) {
+        mkdir($directory, 0755, true);
+    }
+
+    // Load the image based on file type
+    $sourceImage = null;
+    switch ($fileExtension) {
+        case 'jpg':
+        case 'jpeg':
+            $sourceImage = imagecreatefromjpeg($file['tmp_name']);
+            break;
+        case 'png':
+            $sourceImage = imagecreatefrompng($file['tmp_name']);
+            break;
+        case 'gif':
+            $sourceImage = imagecreatefromgif($file['tmp_name']);
+            break;
+    }
+
+    if (!$sourceImage) {
+        return ['success' => false, 'message' => 'Failed to process image'];
+    }
+
+    // Get original dimensions
+    $originalWidth = imagesx($sourceImage);
+    $originalHeight = imagesy($sourceImage);
+
+    // Passport photo dimensions (600x600 pixels for 2x2 inches at 300 DPI)
+    $passportSize = 600;
+
+    // Calculate crop dimensions (center crop to square)
+    $cropSize = min($originalWidth, $originalHeight);
+    $cropX = ($originalWidth - $cropSize) / 2;
+    $cropY = ($originalHeight - $cropSize) / 2;
+
+    // Create a new square image
+    $croppedImage = imagecreatetruecolor($cropSize, $cropSize);
+    
+    // Preserve transparency for PNG images
+    if ($fileExtension === 'png') {
+        imagealphablending($croppedImage, false);
+        imagesavealpha($croppedImage, true);
+        $transparent = imagecolorallocatealpha($croppedImage, 255, 255, 255, 127);
+        imagefilledrectangle($croppedImage, 0, 0, $cropSize, $cropSize, $transparent);
+    }
+
+    // Copy and crop to square
+    imagecopyresampled($croppedImage, $sourceImage, 0, 0, $cropX, $cropY, $cropSize, $cropSize, $cropSize, $cropSize);
+
+    // Create final passport-sized image
+    $passportImage = imagecreatetruecolor($passportSize, $passportSize);
+    
+    // Preserve transparency for PNG images
+    if ($fileExtension === 'png') {
+        imagealphablending($passportImage, false);
+        imagesavealpha($passportImage, true);
+        $transparent = imagecolorallocatealpha($passportImage, 255, 255, 255, 127);
+        imagefilledrectangle($passportImage, 0, 0, $passportSize, $passportSize, $transparent);
+    }
+
+    // Resize to passport size
+    imagecopyresampled($passportImage, $croppedImage, 0, 0, 0, 0, $passportSize, $passportSize, $cropSize, $cropSize);
+
+    // Generate unique filename
+    $fileName = uniqid() . '_' . time() . '.' . $fileExtension;
+    $uploadPath = $directory . $fileName;
+
+    // Save the image
+    $saved = false;
+    switch ($fileExtension) {
+        case 'jpg':
+        case 'jpeg':
+            $saved = imagejpeg($passportImage, $uploadPath, 90);
+            break;
+        case 'png':
+            $saved = imagepng($passportImage, $uploadPath, 8);
+            break;
+        case 'gif':
+            $saved = imagegif($passportImage, $uploadPath);
+            break;
+    }
+
+    // Free memory
+    imagedestroy($sourceImage);
+    imagedestroy($croppedImage);
+    imagedestroy($passportImage);
+
+    if ($saved) {
+        return ['success' => true, 'filename' => $fileName, 'path' => $uploadPath];
+    }
+
+    return ['success' => false, 'message' => 'Failed to save processed image'];
+}
+
+/**
  * Delete file
  */
 function deleteFile($filePath) {

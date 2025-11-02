@@ -140,24 +140,44 @@ class Payment {
     /**
      * Get payment statistics
      */
-    public function getStatistics() {
+    public function getStatistics($member_id = null) {
         $stats = [];
         
+        // Build WHERE clause for member filtering
+        $memberFilter = '';
+        $params = [];
+        if ($member_id !== null) {
+            $memberFilter = " AND member_id = :member_id";
+            $params[':member_id'] = $member_id;
+        }
+        
         // Total payments
-        $query = "SELECT COUNT(*) as total, SUM(amount) as total_amount FROM " . $this->table . " WHERE status = 'completed'";
-        $stmt = $this->conn->query($query);
+        $query = "SELECT COUNT(*) as total, SUM(amount) as total_amount FROM " . $this->table . " WHERE status = 'completed'" . $memberFilter;
+        $stmt = $this->conn->prepare($query);
+        foreach ($params as $key => $value) {
+            $stmt->bindValue($key, $value);
+        }
+        $stmt->execute();
         $row = $stmt->fetch();
         $stats['total_payments'] = $row['total'];
         $stats['total_amount'] = $row['total_amount'] ?? 0;
         
         // Pending payments
-        $query = "SELECT COUNT(*) as total FROM " . $this->table . " WHERE status = 'pending'";
-        $stmt = $this->conn->query($query);
+        $query = "SELECT COUNT(*) as total FROM " . $this->table . " WHERE status = 'pending'" . $memberFilter;
+        $stmt = $this->conn->prepare($query);
+        foreach ($params as $key => $value) {
+            $stmt->bindValue($key, $value);
+        }
+        $stmt->execute();
         $stats['pending_payments'] = $stmt->fetch()['total'];
         
         // Failed payments
-        $query = "SELECT COUNT(*) as total FROM " . $this->table . " WHERE status = 'failed'";
-        $stmt = $this->conn->query($query);
+        $query = "SELECT COUNT(*) as total FROM " . $this->table . " WHERE status = 'failed'" . $memberFilter;
+        $stmt = $this->conn->prepare($query);
+        foreach ($params as $key => $value) {
+            $stmt->bindValue($key, $value);
+        }
+        $stmt->execute();
         $stats['failed_payments'] = $stmt->fetch()['total'];
         
         return $stats;

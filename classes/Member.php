@@ -95,36 +95,36 @@ class Member {
         
         if (!empty($filters['search'])) {
             $query .= " AND (m.fullname LIKE :search OR m.phone LIKE :search OR u.email LIKE :search OR m.student_id LIKE :search)";
-            $params['search'] = "%" . $filters['search'] . "%";
+            $params[':search'] = "%" . $filters['search'] . "%";
         }
         
         if (!empty($filters['membership_status'])) {
             $query .= " AND m.membership_status = :membership_status";
-            $params['membership_status'] = $filters['membership_status'];
+            $params[':membership_status'] = $filters['membership_status'];
         }
         
         if (!empty($filters['position'])) {
             $query .= " AND m.position = :position";
-            $params['position'] = $filters['position'];
+            $params[':position'] = $filters['position'];
         }
         
         if (!empty($filters['region'])) {
             $query .= " AND m.region = :region";
-            $params['region'] = $filters['region'];
+            $params[':region'] = $filters['region'];
         }
         
         if (!empty($filters['campus_id'])) {
             $query .= " AND m.campus_id = :campus_id";
-            $params['campus_id'] = $filters['campus_id'];
+            $params[':campus_id'] = $filters['campus_id'];
         }
         
         $query .= " ORDER BY m.created_at DESC LIMIT :limit OFFSET :offset";
         
         $stmt = $this->conn->prepare($query);
         
-        // Bind filter parameters (without colon prefix in array keys)
+        // Bind filter parameters
         foreach ($params as $key => $value) {
-            $stmt->bindValue(':' . $key, $value);
+            $stmt->bindValue($key, $value);
         }
         
         // Bind limit and offset separately as integers
@@ -154,39 +154,46 @@ class Member {
         
         if (!empty($filters['search'])) {
             $query .= " AND (m.fullname LIKE :search OR m.phone LIKE :search OR u.email LIKE :search OR m.student_id LIKE :search)";
-            $params['search'] = "%" . $filters['search'] . "%";
+            $params[':search'] = "%" . $filters['search'] . "%";
         }
         
         if (!empty($filters['membership_status'])) {
             $query .= " AND m.membership_status = :membership_status";
-            $params['membership_status'] = $filters['membership_status'];
+            $params[':membership_status'] = $filters['membership_status'];
         }
         
         if (!empty($filters['position'])) {
             $query .= " AND m.position = :position";
-            $params['position'] = $filters['position'];
+            $params[':position'] = $filters['position'];
         }
         
         if (!empty($filters['region'])) {
             $query .= " AND m.region = :region";
-            $params['region'] = $filters['region'];
+            $params[':region'] = $filters['region'];
         }
         
         if (!empty($filters['campus_id'])) {
             $query .= " AND m.campus_id = :campus_id";
-            $params['campus_id'] = $filters['campus_id'];
+            $params[':campus_id'] = $filters['campus_id'];
         }
         
         $stmt = $this->conn->prepare($query);
         
-        // Bind parameters (without colon prefix in array keys)
+        // Bind parameters
         foreach ($params as $key => $value) {
-            $stmt->bindValue(':' . $key, $value);
+            $stmt->bindValue($key, $value);
         }
         
-        $stmt->execute();
-        $row = $stmt->fetch();
-        return $row['total'];
+        try {
+            $stmt->execute();
+            $row = $stmt->fetch();
+            return $row['total'];
+        } catch (PDOException $e) {
+            error_log("Member count error: " . $e->getMessage());
+            error_log("Query: " . $query);
+            error_log("Params: " . print_r($params, true));
+            return 0;
+        }
     }
 
     /**

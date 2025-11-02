@@ -29,7 +29,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $confirm_password = $_POST['confirm_password'];
     $student_id = sanitize($_POST['student_id']);
     // Generate email from student ID for user account
-    $email = strtolower(str_replace(' ', '', $student_id)) . '@member.tescongh.org';
+    $email = strtolower(str_replace(' ', '', $student_id)) . '@member.uewtescon.com';
     $fullname = sanitize($_POST['fullname']);
     $phone = sanitize($_POST['phone']);
     $institution = sanitize($_POST['institution']);
@@ -44,12 +44,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $voting_constituency_id = !empty($_POST['voting_constituency_id']) ? (int)$_POST['voting_constituency_id'] : null;
     $campus_id = !empty($_POST['campus_id']) ? (int)$_POST['campus_id'] : null;
     
-    // Handle photo upload
+    // Handle photo upload with automatic passport size cropping
     $photo = null;
     if (isset($_FILES['photo']) && $_FILES['photo']['error'] === UPLOAD_ERR_OK) {
-        $uploadResult = uploadFile($_FILES['photo'], 'uploads/');
+        $uploadResult = uploadPassportPhoto($_FILES['photo'], 'uploads/');
         if ($uploadResult['success']) {
             $photo = $uploadResult['filename'];
+        } else {
+            $error = $uploadResult['message'];
         }
     }
     
@@ -111,10 +113,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     
                     $db->commit();
                     
-                    $success = 'Registration successful! You can now login with your Student ID and password.';
+                    // Auto-login the user after successful registration
+                    $_SESSION['user_id'] = $user_id;
+                    $_SESSION['email'] = $email;
+                    $_SESSION['role'] = 'Member';
+                    $_SESSION['last_activity'] = time();
                     
-                    // Clear form
-                    $_POST = array();
+                    // Redirect to dashboard
+                    redirect('dashboard.php');
                     
                 } catch (Exception $e) {
                     $db->rollBack();
@@ -314,6 +320,7 @@ $institutions = $institutions_stmt->fetchAll(PDO::FETCH_COLUMN);
                                 <div class="col-md-6 mb-3">
                                     <label class="form-label">Profile Photo</label>
                                     <input type="file" class="form-control" name="photo" accept="image/*">
+                                    <small class="text-muted">Image will be automatically cropped to passport size (600x600px)</small>
                                 </div>
                             </div>
                             
