@@ -195,8 +195,8 @@ include 'includes/header.php';
                         </div>
                         
                         <div class="col-md-12 mb-3">
-                            <label class="form-label">Campus</label>
-                            <select class="form-select" name="campus_id" id="campus_select">
+                            <label class="form-label">Campus <span class="text-danger">*</span></label>
+                            <select class="form-select" name="campus_id" id="campus_select" required>
                                 <option value="">Select Institution First</option>
                             </select>
                             <small class="text-muted">Campus will populate based on selected institution</small>
@@ -216,8 +216,8 @@ include 'includes/header.php';
                         </div>
                         
                         <div class="col-md-6 mb-3">
-                            <label class="form-label">Department</label>
-                            <input type="text" class="form-control" name="department" placeholder="e.g., Computer Science">
+                            <label class="form-label">Department <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" name="department" placeholder="e.g., Computer Science" required>
                         </div>
                         
                         <div class="col-md-6 mb-3">
@@ -238,21 +238,21 @@ include 'includes/header.php';
                     <div class="card-body">
                         <div class="mb-3">
                             <label class="form-label">Position <span class="text-danger">*</span></label>
-                            <select class="form-select" name="position" required>
+                            <select class="form-select" name="position" hideen required>
                                 <option value="Member">Member</option>
-                                <option value="Executive">Executive</option>
-                                <option value="Patron">Patron</option>
+                              <!-- <option value="Executive">Executive</option>
+                                <option value="Patron">Patron</option> -->
                             </select>
                         </div>
                         
                         <div class="mb-3">
-                            <label class="form-label">NPP Position (if any)</label>
-                            <input type="text" class="form-control" name="npp_position" placeholder="e.g., Polling Station Executive">
+                            <label class="form-label">NPP Position <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" name="npp_position" placeholder="e.g., Polling Station Executive" required>
                         </div>
                         
                         <div class="mb-3">
-                            <label class="form-label">Voting Region</label>
-                            <select class="form-select" name="voting_region_id" id="voting_region">
+                            <label class="form-label">Voting Region <span class="text-danger">*</span></label>
+                            <select class="form-select" name="voting_region_id" id="voting_region" required>
                                 <option value="">Select Voting Region</option>
                                 <?php foreach ($votingRegions as $vr): ?>
                                     <option value="<?php echo $vr['id']; ?>">
@@ -264,8 +264,8 @@ include 'includes/header.php';
                         </div>
                         
                         <div class="mb-3">
-                            <label class="form-label">Voting Constituency</label>
-                            <select class="form-select" name="voting_constituency_id" id="voting_constituency">
+                            <label class="form-label">Voting Constituency <span class="text-danger">*</span></label>
+                            <select class="form-select" name="voting_constituency_id" id="voting_constituency" required>
                                 <option value="">Select Voting Region First</option>
                             </select>
                             <small class="text-muted">Your constituency for voting</small>

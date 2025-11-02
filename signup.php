@@ -56,8 +56,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     
     // Validation
-    if (empty($fullname) || empty($phone) || empty($password) || empty($institution) || empty($program) || empty($year) || empty($student_id) || empty($region) || empty($constituency)) {
+    if (empty($fullname) || empty($phone) || empty($password) || empty($institution) || empty($program) || empty($year) || empty($student_id) || empty($region) || empty($constituency) || empty($department) || empty($npp_position) || empty($voting_region_id) || empty($voting_constituency_id) || empty($campus_id)) {
         $error = 'Please fill in all required fields';
+    } elseif (!isset($_FILES['photo']) || $_FILES['photo']['error'] !== UPLOAD_ERR_OK) {
+        $error = 'Profile photo is required';
     } elseif ($password !== $confirm_password) {
         $error = 'Passwords do not match';
     } elseif (strlen($password) < 6) {
@@ -264,6 +266,16 @@ $institutions = $institutions_stmt->fetchAll(PDO::FETCH_COLUMN);
             padding-bottom: 0.5rem;
             border-bottom: 2px solid var(--light-blue);
         }
+        
+        /* Hide Take Picture button on desktop */
+        @media (min-width: 768px) {
+            #takePictureBtn {
+                display: none !important;
+            }
+            #uploadPictureBtn {
+                width: 100% !important;
+            }
+        }
     </style>
 </head>
 <body>
@@ -318,8 +330,21 @@ $institutions = $institutions_stmt->fetchAll(PDO::FETCH_COLUMN);
                                 </div>
                                 
                                 <div class="col-md-6 mb-3">
-                                    <label class="form-label">Profile Photo</label>
-                                    <input type="file" class="form-control" name="photo" accept="image/*">
+                                    <label class="form-label">Profile Photo <span class="text-danger">*</span></label>
+                                    <div class="btn-group w-100 mb-2" role="group">
+                                        <button type="button" class="btn btn-outline-primary" id="takePictureBtn">
+                                            <i class="cil-camera"></i> Take Picture
+                                        </button>
+                                        <button type="button" class="btn btn-outline-primary" id="uploadPictureBtn">
+                                            <i class="cil-image"></i> Upload Photo
+                                        </button>
+                                    </div>
+                                    <input type="file" class="form-control d-none" name="photo" id="photoInput" accept="image/*" required>
+                                    <input type="file" class="form-control d-none" id="cameraInput" accept="image/*" capture="user">
+                                    <div id="photoPreview" class="mt-2" style="display: none;">
+                                        <img id="previewImage" src="" alt="Preview" class="img-thumbnail" style="max-width: 200px; max-height: 200px;">
+                                        <button type="button" class="btn btn-sm btn-danger ms-2" id="removePhotoBtn">Remove</button>
+                                    </div>
                                     <small class="text-muted">Image will be automatically cropped to passport size (600x600px)</small>
                                 </div>
                             </div>
@@ -359,8 +384,8 @@ $institutions = $institutions_stmt->fetchAll(PDO::FETCH_COLUMN);
                             
                             <div class="row">
                                 <div class="col-md-12 mb-3">
-                                    <label class="form-label">Campus</label>
-                                    <select class="form-select" name="campus_id" id="campus_select">
+                                    <label class="form-label">Campus <span class="text-danger">*</span></label>
+                                    <select class="form-select" name="campus_id" id="campus_select" required>
                                         <option value="">Select Institution First</option>
                                     </select>
                                     <small class="text-muted">Campus will populate based on selected institution</small>
@@ -369,8 +394,8 @@ $institutions = $institutions_stmt->fetchAll(PDO::FETCH_COLUMN);
                             
                             <div class="row">
                                 <div class="col-md-6 mb-3">
-                                    <label class="form-label">Department</label>
-                                    <input type="text" class="form-control" name="department" placeholder="e.g., Computer Science" value="<?php echo isset($_POST['department']) ? htmlspecialchars($_POST['department']) : ''; ?>">
+                                    <label class="form-label">Department <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" name="department" placeholder="e.g., Computer Science" required value="<?php echo isset($_POST['department']) ? htmlspecialchars($_POST['department']) : ''; ?>">
                                 </div>
                                 
                                 <div class="col-md-6 mb-3">
@@ -394,16 +419,16 @@ $institutions = $institutions_stmt->fetchAll(PDO::FETCH_COLUMN);
                                 </div>
                             </div>
                             
-                            <div class="section-title">Political Information (Optional)</div>
+                            <div class="section-title">Political Information</div>
                             
                             <div class="mb-3">
-                                <label class="form-label">NPP Position (if any)</label>
-                                <input type="text" class="form-control" name="npp_position" placeholder="e.g., Polling Station Executive" value="<?php echo isset($_POST['npp_position']) ? htmlspecialchars($_POST['npp_position']) : ''; ?>">
+                                <label class="form-label">NPP Position <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" name="npp_position" placeholder="e.g., Polling Station Executive" required value="<?php echo isset($_POST['npp_position']) ? htmlspecialchars($_POST['npp_position']) : ''; ?>">
                             </div>
                             
                             <div class="mb-3">
-                                <label class="form-label">Voting Region</label>
-                                <select class="form-select" name="voting_region_id" id="voting_region">
+                                <label class="form-label">Voting Region <span class="text-danger">*</span></label>
+                                <select class="form-select" name="voting_region_id" id="voting_region" required>
                                     <option value="">Select Voting Region</option>
                                     <?php foreach ($votingRegions as $vr): ?>
                                         <option value="<?php echo $vr['id']; ?>">
@@ -415,8 +440,8 @@ $institutions = $institutions_stmt->fetchAll(PDO::FETCH_COLUMN);
                             </div>
                             
                             <div class="mb-3">
-                                <label class="form-label">Voting Constituency</label>
-                                <select class="form-select" name="voting_constituency_id" id="voting_constituency">
+                                <label class="form-label">Voting Constituency <span class="text-danger">*</span></label>
+                                <select class="form-select" name="voting_constituency_id" id="voting_constituency" required>
                                     <option value="">Select Voting Region First</option>
                                 </select>
                             </div>
@@ -581,6 +606,63 @@ $institutions = $institutions_stmt->fetchAll(PDO::FETCH_COLUMN);
         } else {
             votingConstituencySelect.innerHTML = '<option value="">Select Voting Region First</option>';
         }
+    });
+
+    // Photo capture and upload functionality
+    const takePictureBtn = document.getElementById('takePictureBtn');
+    const uploadPictureBtn = document.getElementById('uploadPictureBtn');
+    const photoInput = document.getElementById('photoInput');
+    const cameraInput = document.getElementById('cameraInput');
+    const photoPreview = document.getElementById('photoPreview');
+    const previewImage = document.getElementById('previewImage');
+    const removePhotoBtn = document.getElementById('removePhotoBtn');
+
+    // Take Picture button - triggers camera
+    takePictureBtn.addEventListener('click', function() {
+        cameraInput.click();
+    });
+
+    // Upload Photo button - triggers file picker
+    uploadPictureBtn.addEventListener('click', function() {
+        photoInput.click();
+    });
+
+    // Handle camera capture
+    cameraInput.addEventListener('change', function(e) {
+        if (this.files && this.files[0]) {
+            // Transfer the file to the main photo input
+            const dataTransfer = new DataTransfer();
+            dataTransfer.items.add(this.files[0]);
+            photoInput.files = dataTransfer.files;
+            
+            // Show preview
+            showPreview(this.files[0]);
+        }
+    });
+
+    // Handle file upload
+    photoInput.addEventListener('change', function(e) {
+        if (this.files && this.files[0]) {
+            showPreview(this.files[0]);
+        }
+    });
+
+    // Show image preview
+    function showPreview(file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            previewImage.src = e.target.result;
+            photoPreview.style.display = 'block';
+        };
+        reader.readAsDataURL(file);
+    }
+
+    // Remove photo
+    removePhotoBtn.addEventListener('click', function() {
+        photoInput.value = '';
+        cameraInput.value = '';
+        photoPreview.style.display = 'none';
+        previewImage.src = '';
     });
     </script>
 </body>

@@ -55,16 +55,16 @@ include 'includes/header.php';
             </div>
             <div class="card-body">
                 <div class="row">
-                    <div class="col-md-6 mb-3">
+                    <div class="col-md-4 mb-3">
                         <label class="text-muted small">Full Name</label>
                         <div><strong><?php echo htmlspecialchars($currentMemberData['fullname']); ?></strong></div>
                     </div>
-                    <div class="col-md-6 mb-3">
-                        <label class="text-muted small">Email</label>
-                        <div><strong><?php echo htmlspecialchars($currentMemberData['email']); ?></strong></div>
+                    <div class="col-md-4 mb-3">
+                        <label class="text-muted small">Student ID</label>
+                        <div><strong><?php echo htmlspecialchars($currentMemberData['student_id']); ?></strong></div>
                     </div>
-                    <div class="col-md-6 mb-3">
-                        <label class="text-muted small">Phone</label>
+                    <div class="col-md-4 mb-3">
+                        <label class="text-muted small">Phone Number</label>
                         <div><strong><?php echo htmlspecialchars($currentMemberData['phone']); ?></strong></div>
                     </div>
                     <div class="col-md-6 mb-3">
@@ -72,6 +72,18 @@ include 'includes/header.php';
                         <div><strong><?php echo htmlspecialchars($currentMemberData['institution']); ?></strong></div>
                     </div>
                     <div class="col-md-6 mb-3">
+                        <label class="text-muted small">Program</label>
+                        <div><strong><?php echo htmlspecialchars($currentMemberData['program']); ?></strong></div>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label class="text-muted small">Year/Level</label>
+                        <div><strong>Year <?php echo htmlspecialchars($currentMemberData['year']); ?></strong></div>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label class="text-muted small">Position</label>
+                        <div><span class="badge bg-info"><?php echo htmlspecialchars($currentMemberData['position']); ?></span></div>
+                    </div>
+                    <div class="col-md-3 mb-3">
                         <label class="text-muted small">Status</label>
                         <div>
                             <span class="badge bg-<?php echo getStatusBadgeClass($currentMemberData['membership_status']); ?>">
@@ -79,7 +91,7 @@ include 'includes/header.php';
                             </span>
                         </div>
                     </div>
-                    <div class="col-md-6 mb-3">
+                    <div class="col-md-3 mb-3">
                         <label class="text-muted small">Member Since</label>
                         <div><strong><?php echo formatDate($currentMemberData['created_at'], 'd M Y'); ?></strong></div>
                     </div>
@@ -206,16 +218,17 @@ include 'includes/header.php';
                         <thead>
                             <tr>
                                 <th>Name</th>
-                                <th>Email</th>
+                                <th>Student ID</th>
                                 <th>Institution</th>
+                                <th>Program</th>
+                                <th>Year</th>
                                 <th>Status</th>
-                                <th>Joined</th>
                             </tr>
                         </thead>
                         <tbody>
                             <?php if (empty($recentMembers)): ?>
                                 <tr>
-                                    <td colspan="5" class="text-center text-muted">No members found</td>
+                                    <td colspan="6" class="text-center text-muted">No members found</td>
                                 </tr>
                             <?php else: ?>
                                 <?php foreach ($recentMembers as $m): ?>
@@ -225,17 +238,21 @@ include 'includes/header.php';
                                                 <div class="avatar-initials me-2" style="width: 32px; height: 32px; font-size: 0.875rem;">
                                                     <?php echo getInitials($m['fullname']); ?>
                                                 </div>
-                                                <strong><?php echo htmlspecialchars($m['fullname']); ?></strong>
+                                                <div>
+                                                    <strong><?php echo htmlspecialchars($m['fullname']); ?></strong>
+                                                    <br><small class="text-muted"><?php echo htmlspecialchars($m['phone']); ?></small>
+                                                </div>
                                             </div>
                                         </td>
-                                        <td><?php echo htmlspecialchars($m['email']); ?></td>
+                                        <td><strong><?php echo htmlspecialchars($m['student_id']); ?></strong></td>
                                         <td><?php echo htmlspecialchars($m['institution']); ?></td>
+                                        <td><small><?php echo htmlspecialchars($m['program']); ?></small></td>
+                                        <td><span class="badge bg-secondary">Year <?php echo $m['year']; ?></span></td>
                                         <td>
                                             <span class="badge bg-<?php echo getStatusBadgeClass($m['membership_status']); ?>">
                                                 <?php echo $m['membership_status']; ?>
                                             </span>
                                         </td>
-                                        <td><?php echo formatDate($m['created_at'], 'd M Y'); ?></td>
                                     </tr>
                                 <?php endforeach; ?>
                             <?php endif; ?>
