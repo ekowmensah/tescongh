@@ -25,7 +25,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && hasAnyRole(['Admin', 'Executive']))
             if ($result['success']) {
                 setFlashMessage('success', 'Dues created successfully');
             } else {
-                setFlashMessage('danger', 'Failed to create dues');
+                $message = isset($result['message']) ? $result['message'] : 'Failed to create dues';
+                setFlashMessage('danger', $message);
             }
             redirect('dues.php');
         }

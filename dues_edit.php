@@ -37,7 +37,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $description = sanitize($_POST['description']);
     $dueDate = sanitize($_POST['due_date']);
     
-    if ($dues->update($duesId, $year, $amount, $description, $dueDate)) {
+    $result = $dues->update($duesId, $year, $amount, $description, $dueDate);
+    if (is_array($result) && isset($result['success'])) {
+        if ($result['success']) {
+            setFlashMessage('success', 'Dues updated successfully');
+            redirect('dues.php');
+        } else {
+            $message = isset($result['message']) ? $result['message'] : 'Failed to update dues';
+            setFlashMessage('danger', $message);
+        }
+    } else if ($result) {
+        // Backward compatibility if update returns boolean true
         setFlashMessage('success', 'Dues updated successfully');
         redirect('dues.php');
     } else {

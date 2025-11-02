@@ -42,34 +42,54 @@ class Dues {
      * Create dues
      */
     public function create($year, $amount, $description, $dueDate) {
-        $query = "INSERT INTO " . $this->table . " (year, amount, description, due_date) 
-                  VALUES (:year, :amount, :description, :due_date)";
-        $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(':year', $year);
-        $stmt->bindParam(':amount', $amount);
-        $stmt->bindParam(':description', $description);
-        $stmt->bindParam(':due_date', $dueDate);
-        
-        if ($stmt->execute()) {
-            return ['success' => true, 'id' => $this->conn->lastInsertId()];
+        try {
+            $query = "INSERT INTO " . $this->table . " (year, amount, description, due_date) 
+                      VALUES (:year, :amount, :description, :due_date)";
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindParam(':year', $year);
+            $stmt->bindParam(':amount', $amount);
+            $stmt->bindParam(':description', $description);
+            $stmt->bindParam(':due_date', $dueDate);
+            
+            if ($stmt->execute()) {
+                return ['success' => true, 'id' => $this->conn->lastInsertId()];
+            }
+            return ['success' => false, 'message' => 'Failed to create dues'];
+        } catch (PDOException $e) {
+            // Check for duplicate entry error
+            if ($e->getCode() == 23000 || strpos($e->getMessage(), 'Duplicate entry') !== false) {
+                return ['success' => false, 'message' => "Dues for year {$year} already exists. Please edit the existing record instead."];
+            }
+            return ['success' => false, 'message' => 'An error occurred while creating dues: ' . $e->getMessage()];
         }
-        return ['success' => false];
     }
 
     /**
      * Update dues
      */
     public function update($id, $year, $amount, $description, $dueDate) {
-        $query = "UPDATE " . $this->table . " 
-                  SET year = :year, amount = :amount, description = :description, due_date = :due_date 
-                  WHERE id = :id";
-        $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(':year', $year);
-        $stmt->bindParam(':amount', $amount);
-        $stmt->bindParam(':description', $description);
-        $stmt->bindParam(':due_date', $dueDate);
-        $stmt->bindParam(':id', $id);
-        return $stmt->execute();
+        try {
+            $query = "UPDATE " . $this->table . " 
+                      SET year = :year, amount = :amount, description = :description, due_date = :due_date 
+                      WHERE id = :id";
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindParam(':year', $year);
+            $stmt->bindParam(':amount', $amount);
+            $stmt->bindParam(':description', $description);
+            $stmt->bindParam(':due_date', $dueDate);
+            $stmt->bindParam(':id', $id);
+            
+            if ($stmt->execute()) {
+                return ['success' => true];
+            }
+            return ['success' => false, 'message' => 'Failed to update dues'];
+        } catch (PDOException $e) {
+            // Check for duplicate entry error
+            if ($e->getCode() == 23000 || strpos($e->getMessage(), 'Duplicate entry') !== false) {
+                return ['success' => false, 'message' => "Dues for year {$year} already exists. Please choose a different year."];
+            }
+            return ['success' => false, 'message' => 'An error occurred while updating dues: ' . $e->getMessage()];
+        }
     }
 
     /**
