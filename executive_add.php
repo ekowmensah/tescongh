@@ -15,7 +15,7 @@ if (!hasAnyRole(['Admin', 'Executive'])) {
     redirect('dashboard.php');
 }
 
-$pageTitle = 'Add Executive';
+$pageTitle = 'Promote Member to Executive';
 
 $database = new Database();
 $db = $database->getConnection();
@@ -23,99 +23,87 @@ $db = $database->getConnection();
 $user = new User($db);
 $member = new Member($db);
 $position = new Position($db);
-$region = new Region($db);
-$votingRegion = new VotingRegion($db);
-$campus = new Campus($db);
 
 // Get data for dropdowns
-$regions = $region->getAll();
-$votingRegions = $votingRegion->getAll();
 $executivePositions = $position->getExecutivePositions();
 
+// Get all institutions for executive assignment
+$institutionsQuery = "SELECT DISTINCT i.id, i.name 
+                      FROM institutions i 
+                      INNER JOIN campuses c ON i.id = c.institution_id 
+                      ORDER BY i.name ASC";
+$institutionsStmt = $db->query($institutionsQuery);
+$institutions = $institutionsStmt->fetchAll();
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $email = sanitize($_POST['email']);
-    $password = $_POST['password'];
-    $fullname = sanitize($_POST['fullname']);
-    $phone = sanitize($_POST['phone']);
-    $date_of_birth = sanitize($_POST['date_of_birth']);
-    $institution = sanitize($_POST['institution']);
-    $department = sanitize($_POST['department']);
-    $program = sanitize($_POST['program']);
-    $year = sanitize($_POST['year']);
-    $student_id = sanitize($_POST['student_id']);
-    $region = sanitize($_POST['region']);
-    $constituency = sanitize($_POST['constituency']);
-    $hails_from_region = sanitize($_POST['hails_from_region']);
-    $hails_from_constituency = sanitize($_POST['hails_from_constituency']);
-    $npp_position = sanitize($_POST['npp_position']);
-    $voting_region_id = !empty($_POST['voting_region_id']) ? (int)$_POST['voting_region_id'] : null;
-    $voting_constituency_id = !empty($_POST['voting_constituency_id']) ? (int)$_POST['voting_constituency_id'] : null;
-    $campus_id = !empty($_POST['campus_id']) ? (int)$_POST['campus_id'] : null;
+    $member_id = !empty($_POST['member_id']) ? (int)$_POST['member_id'] : null;
     $position_id = !empty($_POST['position_id']) ? (int)$_POST['position_id'] : null;
+    $campus_id = !empty($_POST['campus_id']) ? (int)$_POST['campus_id'] : null;
     
-    // Handle photo upload
-    $photo = null;
-    if (isset($_FILES['photo']) && $_FILES['photo']['error'] === UPLOAD_ERR_OK) {
-        $uploadResult = uploadFile($_FILES['photo'], 'uploads/');
-        if ($uploadResult['success']) {
-            $photo = $uploadResult['filename'];
-        }
+    if (!$member_id) {
+        setFlashMessage('danger', 'Please select a member to promote');
+        redirect('executive_add.php');
     }
     
-    // Create user account with Executive role
-    $userResult = $user->register($email, $password, 'Executive');
+    if (!$position_id) {
+        setFlashMessage('danger', 'Please select an executive position');
+        redirect('executive_add.php');
+    }
     
-    if ($userResult['success']) {
-        $userId = $userResult['user_id'];
+    try {
+        $db->beginTransaction();
         
-        // Create member profile
-        $memberData = [
-            'user_id' => $userId,
-            'fullname' => $fullname,
-            'phone' => $phone,
-            'date_of_birth' => $date_of_birth,
-            'photo' => $photo,
-            'institution' => $institution,
-            'department' => $department,
-            'program' => $program,
-            'year' => $year,
-            'student_id' => $student_id,
-            'position' => 'Executive',
-            'region' => $region,
-            'constituency' => $constituency,
-            'hails_from_region' => $hails_from_region,
-            'hails_from_constituency' => $hails_from_constituency,
-            'npp_position' => $npp_position,
-            'voting_region_id' => $voting_region_id,
-            'voting_constituency_id' => $voting_constituency_id,
-            'campus_id' => $campus_id,
-            'membership_status' => 'Active'
-        ];
+        // Get member details
+        $memberData = $member->getById($member_id);
+        if (!$memberData) {
+            throw new Exception('Member not found');
+        }
         
-        $memberResult = $member->create($memberData);
+        // Update member position to Executive
+        $updateQuery = "UPDATE members SET position = 'Executive' WHERE id = :member_id";
+        $updateStmt = $db->prepare($updateQuery);
+        $updateStmt->bindParam(':member_id', $member_id);
+        $updateStmt->execute();
         
-        if ($memberResult['success']) {
-            $memberId = $memberResult['member_id'];
+        // Update user role to Executive
+        $updateUserQuery = "UPDATE users SET role = 'Executive' WHERE id = :user_id";
+        $updateUserStmt = $db->prepare($updateUserQuery);
+        $updateUserStmt->bindParam(':user_id', $memberData['user_id']);
+        $updateUserStmt->execute();
+        
+        // Assign executive position to campus
+        if ($campus_id) {
+            // Check if already assigned to this campus
+            $checkQuery = "SELECT id FROM campus_executives WHERE campus_id = :campus_id AND member_id = :member_id";
+            $checkStmt = $db->prepare($checkQuery);
+            $checkStmt->bindParam(':campus_id', $campus_id);
+            $checkStmt->bindParam(':member_id', $member_id);
+            $checkStmt->execute();
             
-            // Assign executive position to campus
-            if ($campus_id && $position_id) {
-                $query = "INSERT INTO campus_executives (campus_id, member_id, position_id) 
-                          VALUES (:campus_id, :member_id, :position_id)";
-                $stmt = $db->prepare($query);
-                $stmt->bindParam(':campus_id', $campus_id);
-                $stmt->bindParam(':member_id', $memberId);
-                $stmt->bindParam(':position_id', $position_id);
-                $stmt->execute();
+            if ($checkStmt->rowCount() > 0) {
+                // Update existing assignment
+                $assignQuery = "UPDATE campus_executives SET position_id = :position_id WHERE campus_id = :campus_id AND member_id = :member_id";
+            } else {
+                // Create new assignment
+                $assignQuery = "INSERT INTO campus_executives (campus_id, member_id, position_id) VALUES (:campus_id, :member_id, :position_id)";
             }
             
-            setFlashMessage('success', 'Executive added successfully');
-            redirect('members.php');
-        } else {
-            $errorMsg = isset($memberResult['message']) ? $memberResult['message'] : 'Failed to create executive profile';
-            setFlashMessage('danger', $errorMsg);
+            $assignStmt = $db->prepare($assignQuery);
+            $assignStmt->bindParam(':campus_id', $campus_id);
+            $assignStmt->bindParam(':member_id', $member_id);
+            $assignStmt->bindParam(':position_id', $position_id);
+            $assignStmt->execute();
         }
-    } else {
-        setFlashMessage('danger', $userResult['message']);
+        
+        $db->commit();
+        setFlashMessage('success', 'Member successfully promoted to Executive');
+        redirect('members.php');
+        
+    } catch (Exception $e) {
+        $db->rollBack();
+        error_log('Executive promotion error: ' . $e->getMessage());
+        setFlashMessage('danger', 'Failed to promote member: ' . $e->getMessage());
+        redirect('executive_add.php');
     }
 }
 
@@ -123,183 +111,106 @@ include 'includes/header.php';
 ?>
 
 <div class="row mb-4">
-    <div class="col-md-6">
-        <h2>Add New Executive</h2>
-    </div>
-    <div class="col-md-6 text-end">
+    <div class="col-md-12">
+        <h2>Promote Member to Executive</h2>
+        <p class="text-muted">Select an existing member and assign them an executive position</p>
         <a href="members.php" class="btn btn-secondary">
             <i class="cil-arrow-left"></i> Back to Members
         </a>
     </div>
 </div>
 
-<form method="POST" action="" enctype="multipart/form-data">
+<form method="POST" action="" id="promoteForm">
     <div class="row">
         <div class="col-md-8">
-            <!-- Account Information -->
+            <!-- Select Institution and Campus -->
             <div class="card">
                 <div class="card-header">
-                    <strong>Account Information</strong>
+                    <strong>Step 1: Select Institution & Campus</strong>
                 </div>
                 <div class="card-body">
                     <div class="alert alert-info">
-                        <i class="cil-info"></i> <strong>Executive Access:</strong> Executives can login using their <strong>Email</strong> or <strong>Student ID</strong>.
+                        <i class="cil-info"></i> <strong>Note:</strong> Select the institution and campus first, then choose a member from that campus.
                     </div>
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Email Address <span class="text-danger">*</span></label>
-                            <input type="email" class="form-control" name="email" id="email" required>
-                            <div id="email-feedback" class="invalid-feedback"></div>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Password <span class="text-danger">*</span></label>
-                            <input type="password" class="form-control" name="password" id="password" minlength="6" required>
-                            <small class="text-muted">Minimum 6 characters</small>
-                            <div id="password-feedback" class="invalid-feedback"></div>
-                        </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Institution <span class="text-danger">*</span></label>
+                        <select class="form-select" id="institutionSelect" required>
+                            <option value="">Select Institution</option>
+                            <?php foreach ($institutions as $inst): ?>
+                                <option value="<?php echo $inst['id']; ?>">
+                                    <?php echo htmlspecialchars($inst['name']); ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                        <small class="text-muted">Select the institution where executive will serve</small>
                     </div>
-                </div>
-            </div>
-            
-            <!-- Personal Information -->
-            <div class="card">
-                <div class="card-header">
-                    <strong>Personal Information</strong>
-                </div>
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Full Name <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" name="fullname" required>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Phone Number <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" name="phone" id="phone" placeholder="0XXXXXXXXX" maxlength="10" required>
-                            <small class="text-muted">Enter 10 digits (e.g., 0241234567)</small>
-                            <div id="phone-feedback" class="invalid-feedback"></div>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Date of Birth</label>
-                            <input type="date" class="form-control" name="date_of_birth">
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Profile Photo</label>
-                            <input type="file" class="form-control" name="photo" accept="image/*">
-                        </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Campus <span class="text-danger">*</span></label>
+                        <select class="form-select" name="campus_id" id="campusSelect" required>
+                            <option value="">Select Institution First</option>
+                        </select>
+                        <small class="text-muted">Select the specific campus</small>
                     </div>
                 </div>
             </div>
             
-            <!-- Current Location & Campus Assignment -->
-            <div class="card">
+            <!-- Select Member -->
+            <div class="card" id="memberSelectionCard" style="display: none;">
                 <div class="card-header">
-                    <strong>Campus Assignment</strong>
+                    <strong>Step 2: Select Member to Promote</strong>
                 </div>
                 <div class="card-body">
-                    <div class="alert alert-warning">
-                        <i class="cil-warning"></i> <strong>Important:</strong> Select the campus where this executive will serve.
+                    <div class="alert alert-success">
+                        <i class="cil-check-circle"></i> <strong>Campus Selected:</strong> <span id="selectedCampusName"></span>
                     </div>
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Current Region <span class="text-danger">*</span></label>
-                            <select class="form-select" name="region" id="current_region" required>
-                                <option value="">Select Region</option>
-                                <?php foreach ($regions as $reg): ?>
-                                    <option value="<?php echo htmlspecialchars($reg['name']); ?>" data-id="<?php echo $reg['id']; ?>">
-                                        <?php echo htmlspecialchars($reg['name']); ?>
-                                    </option>
-                                <?php endforeach; ?>
-                            </select>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Current Constituency <span class="text-danger">*</span></label>
-                            <select class="form-select" name="constituency" id="current_constituency" required>
-                                <option value="">Select Region First</option>
-                            </select>
-                            <small class="text-muted">Required to load institutions</small>
-                        </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Search Member</label>
+                        <input type="text" class="form-control" id="memberSearch" placeholder="Type to search by name, student ID, or phone...">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Select Member <span class="text-danger">*</span></label>
+                        <select class="form-select" name="member_id" id="memberSelect" required size="10">
+                            <option value="">-- Loading members... --</option>
+                        </select>
+                        <small class="text-muted" id="memberCount">Select campus to load members</small>
                     </div>
                 </div>
             </div>
             
-            <!-- Academic Information -->
-            <div class="card">
+            <!-- Member Details Preview -->
+            <div class="card" id="memberDetailsCard" style="display: none;">
                 <div class="card-header">
-                    <strong>Academic Information</strong>
+                    <strong>Selected Member Details</strong>
                 </div>
                 <div class="card-body">
                     <div class="row">
-                        <div class="col-md-12 mb-3">
-                            <label class="form-label">Institution <span class="text-danger">*</span></label>
-                            <select class="form-select" name="institution" id="institution_select" required>
-                                <option value="">Select Region & Constituency First</option>
-                            </select>
-                            <small class="text-muted"><strong>Note:</strong> You must select both region and constituency to load institutions</small>
+                        <div class="col-md-6 mb-2">
+                            <strong>Full Name:</strong>
+                            <div id="previewFullname" class="text-muted">-</div>
                         </div>
-                        
-                        <div class="col-md-12 mb-3">
-                            <label class="form-label">Campus <span class="text-danger">*</span></label>
-                            <select class="form-select" name="campus_id" id="campus_select" required>
-                                <option value="">Select Institution First</option>
-                            </select>
-                            <small class="text-muted"><strong>This is where the executive will serve</strong></small>
+                        <div class="col-md-6 mb-2">
+                            <strong>Student ID:</strong>
+                            <div id="previewStudentId" class="text-muted">-</div>
                         </div>
-                        
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Student ID <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" name="student_id" required>
-                            <small class="text-muted"><strong>Important:</strong> Can be used for login</small>
+                        <div class="col-md-6 mb-2">
+                            <strong>Email:</strong>
+                            <div id="previewEmail" class="text-muted">-</div>
                         </div>
-                        
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Year/Level <span class="text-danger">*</span></label>
-                            <select class="form-select" name="year" required>
-                                <option value="">Select Year</option>
-                                <option value="1">Year 1</option>
-                                <option value="2">Year 2</option>
-                                <option value="3">Year 3</option>
-                                <option value="4">Year 4</option>
-                                <option value="5">Year 5</option>
-                                <option value="6">Year 6</option>
-                            </select>
+                        <div class="col-md-6 mb-2">
+                            <strong>Phone:</strong>
+                            <div id="previewPhone" class="text-muted">-</div>
                         </div>
-                        
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Department</label>
-                            <input type="text" class="form-control" name="department" placeholder="e.g., Computer Science">
+                        <div class="col-md-6 mb-2">
+                            <strong>Institution:</strong>
+                            <div id="previewInstitution" class="text-muted">-</div>
                         </div>
-                        
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Program <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" name="program" placeholder="e.g., BSc Computer Science" required>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Origin Information -->
-            <div class="card">
-                <div class="card-header">
-                    <strong>Origin (Where They Hail From)</strong>
-                </div>
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Hails From Region</label>
-                            <select class="form-select" name="hails_from_region" id="hails_region">
-                                <option value="">Select Region</option>
-                                <?php foreach ($regions as $reg): ?>
-                                    <option value="<?php echo htmlspecialchars($reg['name']); ?>" data-id="<?php echo $reg['id']; ?>">
-                                        <?php echo htmlspecialchars($reg['name']); ?>
-                                    </option>
-                                <?php endforeach; ?>
-                            </select>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Hails From Constituency</label>
-                            <select class="form-select" name="hails_from_constituency" id="hails_constituency">
-                                <option value="">Select Region First</option>
-                            </select>
+                        <div class="col-md-6 mb-2">
+                            <strong>Campus:</strong>
+                            <div id="previewCampus" class="text-muted">-</div>
                         </div>
                     </div>
                 </div>
@@ -311,11 +222,11 @@ include 'includes/header.php';
                 <!-- Executive Position -->
                 <div class="card">
                     <div class="card-header">
-                        <strong>Executive Position</strong>
+                        <strong>Step 3: Executive Position</strong>
                     </div>
                     <div class="card-body">
                         <div class="mb-3">
-                            <label class="form-label">Position <span class="text-danger">*</span></label>
+                            <label class="form-label">Executive Position <span class="text-danger">*</span></label>
                             <select class="form-select" name="position_id" required>
                                 <option value="">Select Position</option>
                                 <?php foreach ($executivePositions as $pos): ?>
@@ -326,32 +237,6 @@ include 'includes/header.php';
                             </select>
                             <small class="text-muted">Their role in the campus executive team</small>
                         </div>
-                        
-                        <div class="mb-3">
-                            <label class="form-label">NPP Position (if any)</label>
-                            <input type="text" class="form-control" name="npp_position" placeholder="e.g., Constituency Secretary">
-                        </div>
-                        
-                        <div class="mb-3">
-                            <label class="form-label">Voting Region</label>
-                            <select class="form-select" name="voting_region_id" id="voting_region">
-                                <option value="">Select Voting Region</option>
-                                <?php foreach ($votingRegions as $vr): ?>
-                                    <option value="<?php echo $vr['id']; ?>">
-                                        <?php echo htmlspecialchars($vr['name']); ?>
-                                    </option>
-                                <?php endforeach; ?>
-                            </select>
-                            <small class="text-muted">Where they are registered to vote</small>
-                        </div>
-                        
-                        <div class="mb-3">
-                            <label class="form-label">Voting Constituency</label>
-                            <select class="form-select" name="voting_constituency_id" id="voting_constituency">
-                                <option value="">Select Voting Region First</option>
-                            </select>
-                            <small class="text-muted">Their constituency for voting</small>
-                        </div>
                     </div>
                 </div>
                 
@@ -359,7 +244,7 @@ include 'includes/header.php';
                 <div class="card">
                     <div class="card-body">
                         <button type="submit" class="btn btn-primary w-100 mb-2">
-                            <i class="cil-check"></i> Create Executive
+                            <i class="cil-check"></i> Promote to Executive
                         </button>
                         <a href="members.php" class="btn btn-secondary w-100">
                             <i class="cil-x"></i> Cancel
@@ -371,27 +256,182 @@ include 'includes/header.php';
     </div>
 </form>
 
-<!-- Include the same JavaScript from member_add.php -->
-<script src="js/member_form.js"></script>
-
 <script>
-// Load voting constituencies when voting region is selected
-document.getElementById('voting_region').addEventListener('change', function() {
-    const votingRegionId = this.value;
-    const votingConstituencySelect = document.getElementById('voting_constituency');
+// Member search functionality
+const memberSearch = document.getElementById('memberSearch');
+const memberSelect = document.getElementById('memberSelect');
+const memberDetailsCard = document.getElementById('memberDetailsCard');
+const campusIdInput = document.getElementById('campusIdInput');
+const campusDisplay = document.getElementById('campusDisplay');
+
+memberSearch.addEventListener('input', function() {
+    const searchTerm = this.value.toLowerCase();
+    const options = memberSelect.options;
     
-    if (votingRegionId) {
-        fetch('api/get_voting_constituencies.php?region_id=' + votingRegionId)
-            .then(response => response.text())
-            .then(html => {
-                votingConstituencySelect.innerHTML = html;
+    for (let i = 1; i < options.length; i++) {
+        const option = options[i];
+        const fullname = option.getAttribute('data-fullname').toLowerCase();
+        const studentId = option.getAttribute('data-student-id').toLowerCase();
+        const phone = option.getAttribute('data-phone').toLowerCase();
+        
+        if (fullname.includes(searchTerm) || studentId.includes(searchTerm) || phone.includes(searchTerm)) {
+            option.style.display = '';
+        } else {
+            option.style.display = 'none';
+        }
+    }
+});
+
+// Show member details when selected
+memberSelect.addEventListener('change', function() {
+    const selectedOption = this.options[this.selectedIndex];
+    
+    if (this.value) {
+        // Show details card
+        memberDetailsCard.style.display = 'block';
+        
+        // Populate preview fields
+        document.getElementById('previewFullname').textContent = selectedOption.getAttribute('data-fullname');
+        document.getElementById('previewStudentId').textContent = selectedOption.getAttribute('data-student-id');
+        document.getElementById('previewEmail').textContent = selectedOption.getAttribute('data-email');
+        document.getElementById('previewPhone').textContent = selectedOption.getAttribute('data-phone');
+        document.getElementById('previewInstitution').textContent = selectedOption.getAttribute('data-institution');
+        document.getElementById('previewCampus').textContent = selectedOption.getAttribute('data-campus');
+    } else {
+        // Hide details card
+        memberDetailsCard.style.display = 'none';
+    }
+});
+
+// Load campuses when institution is selected
+document.getElementById('institutionSelect').addEventListener('change', function() {
+    const institutionId = this.value;
+    const campusSelect = document.getElementById('campusSelect');
+    const memberSelectionCard = document.getElementById('memberSelectionCard');
+    const memberDetailsCard = document.getElementById('memberDetailsCard');
+    
+    // Hide member selection when institution changes
+    memberSelectionCard.style.display = 'none';
+    memberDetailsCard.style.display = 'none';
+    
+    if (institutionId) {
+        // Show loading message
+        campusSelect.innerHTML = '<option value="">Loading campuses...</option>';
+        
+        // Fetch campuses for selected institution
+        fetch('ajax/get_campuses_by_institution.php?institution_id=' + institutionId)
+            .then(response => response.json())
+            .then(data => {
+                campusSelect.innerHTML = '<option value="">Select Campus</option>';
+                
+                if (data.length > 0) {
+                    data.forEach(campus => {
+                        const option = document.createElement('option');
+                        option.value = campus.id;
+                        option.setAttribute('data-name', campus.name + ' - ' + campus.location);
+                        option.textContent = campus.name + ' - ' + campus.location;
+                        campusSelect.appendChild(option);
+                    });
+                } else {
+                    campusSelect.innerHTML = '<option value="">No campuses found for this institution</option>';
+                }
             })
             .catch(error => {
-                console.error('Error loading voting constituencies:', error);
-                votingConstituencySelect.innerHTML = '<option value="">Error loading constituencies</option>';
+                console.error('Error loading campuses:', error);
+                campusSelect.innerHTML = '<option value="">Error loading campuses</option>';
             });
     } else {
-        votingConstituencySelect.innerHTML = '<option value="">Select Voting Region First</option>';
+        campusSelect.innerHTML = '<option value="">Select Institution First</option>';
+    }
+});
+
+// Load members when campus is selected
+document.getElementById('campusSelect').addEventListener('change', function() {
+    const campusId = this.value;
+    const selectedOption = this.options[this.selectedIndex];
+    const campusName = selectedOption.getAttribute('data-name');
+    const memberSelect = document.getElementById('memberSelect');
+    const memberSelectionCard = document.getElementById('memberSelectionCard');
+    const memberDetailsCard = document.getElementById('memberDetailsCard');
+    const selectedCampusName = document.getElementById('selectedCampusName');
+    const memberCount = document.getElementById('memberCount');
+    
+    // Hide member details when campus changes
+    memberDetailsCard.style.display = 'none';
+    
+    if (campusId) {
+        // Show member selection card
+        memberSelectionCard.style.display = 'block';
+        selectedCampusName.textContent = campusName;
+        
+        // Show loading message
+        memberSelect.innerHTML = '<option value="">Loading members...</option>';
+        memberCount.textContent = 'Loading...';
+        
+        // Fetch members for selected campus
+        fetch('ajax/get_members_by_campus.php?campus_id=' + campusId)
+            .then(response => response.json())
+            .then(data => {
+                memberSelect.innerHTML = '<option value="">-- Select a member --</option>';
+                
+                if (data.length > 0) {
+                    data.forEach(member => {
+                        const option = document.createElement('option');
+                        option.value = member.id;
+                        option.setAttribute('data-fullname', member.fullname);
+                        option.setAttribute('data-student-id', member.student_id);
+                        option.setAttribute('data-phone', member.phone);
+                        option.setAttribute('data-email', member.email);
+                        option.setAttribute('data-institution', member.institution_name);
+                        option.setAttribute('data-campus', member.campus_name);
+                        option.textContent = member.fullname + ' - ' + member.student_id;
+                        memberSelect.appendChild(option);
+                    });
+                    memberCount.textContent = 'Showing ' + data.length + ' available members from this campus';
+                } else {
+                    memberSelect.innerHTML = '<option value="">No eligible members found in this campus</option>';
+                    memberCount.textContent = 'No members available';
+                }
+            })
+            .catch(error => {
+                console.error('Error loading members:', error);
+                memberSelect.innerHTML = '<option value="">Error loading members</option>';
+                memberCount.textContent = 'Error loading members';
+            });
+    } else {
+        memberSelectionCard.style.display = 'none';
+    }
+});
+
+// Form validation
+document.getElementById('promoteForm').addEventListener('submit', function(e) {
+    const memberId = memberSelect.value;
+    const positionId = document.querySelector('select[name="position_id"]').value;
+    const institutionId = document.getElementById('institutionSelect').value;
+    const campusId = document.getElementById('campusSelect').value;
+    
+    let errors = [];
+    
+    if (!memberId) {
+        errors.push('Please select a member to promote');
+    }
+    
+    if (!positionId) {
+        errors.push('Please select an executive position');
+    }
+    
+    if (!institutionId) {
+        errors.push('Please select an institution');
+    }
+    
+    if (!campusId) {
+        errors.push('Please select a campus');
+    }
+    
+    if (errors.length > 0) {
+        e.preventDefault();
+        alert(errors.join('\n'));
+        return false;
     }
 });
 </script>
