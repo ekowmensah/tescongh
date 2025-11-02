@@ -437,6 +437,12 @@ include 'includes/header.php';
                             <div class="info-value"><?php echo htmlspecialchars($memberData['phone']); ?></div>
                         </div>
                     </div>
+                    <div class="col-md-6">
+                        <div class="info-item">
+                            <div class="info-label"><i class="cil-user"></i> Gender</div>
+                            <div class="info-value"><?php echo htmlspecialchars($memberData['gender'] ?? 'Not specified'); ?></div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

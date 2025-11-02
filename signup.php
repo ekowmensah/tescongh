@@ -32,6 +32,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $email = strtolower(str_replace(' ', '', $student_id)) . '@member.uewtescon.com';
     $fullname = sanitize($_POST['fullname']);
     $phone = sanitize($_POST['phone']);
+    $gender = sanitize($_POST['gender']);
     $institution = sanitize($_POST['institution']);
     $department = sanitize($_POST['department']);
     $program = sanitize($_POST['program']);
@@ -56,7 +57,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     
     // Validation
-    if (empty($fullname) || empty($phone) || empty($password) || empty($institution) || empty($program) || empty($year) || empty($student_id) || empty($region) || empty($constituency) || empty($department) || empty($npp_position) || empty($voting_region_id) || empty($voting_constituency_id) || empty($campus_id)) {
+    if (empty($fullname) || empty($phone) || empty($gender) || empty($password) || empty($institution) || empty($program) || empty($year) || empty($student_id) || empty($region) || empty($constituency) || empty($department) || empty($npp_position) || empty($voting_region_id) || empty($voting_constituency_id) || empty($campus_id)) {
         $error = 'Please fill in all required fields';
     } elseif (!isset($_FILES['photo']) || $_FILES['photo']['error'] !== UPLOAD_ERR_OK) {
         $error = 'Profile photo is required';
@@ -92,12 +93,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $user_id = $db->lastInsertId();
                     
                     // Create member profile
-                    $member_query = "INSERT INTO members (user_id, fullname, phone, photo, institution, department, program, year, student_id, position, region, constituency, npp_position, voting_region_id, voting_constituency_id, campus_id, membership_status) 
-                                    VALUES (:user_id, :fullname, :phone, :photo, :institution, :department, :program, :year, :student_id, :position, :region, :constituency, :npp_position, :voting_region_id, :voting_constituency_id, :campus_id, 'Active')";
+                    $member_query = "INSERT INTO members (user_id, fullname, phone, gender, photo, institution, department, program, year, student_id, position, region, constituency, npp_position, voting_region_id, voting_constituency_id, campus_id, membership_status) 
+                                    VALUES (:user_id, :fullname, :phone, :gender, :photo, :institution, :department, :program, :year, :student_id, :position, :region, :constituency, :npp_position, :voting_region_id, :voting_constituency_id, :campus_id, 'Active')";
                     $member_stmt = $db->prepare($member_query);
                     $member_stmt->bindParam(':user_id', $user_id);
                     $member_stmt->bindParam(':fullname', $fullname);
                     $member_stmt->bindParam(':phone', $phone);
+                    $member_stmt->bindParam(':gender', $gender);
                     $member_stmt->bindParam(':photo', $photo);
                     $member_stmt->bindParam(':institution', $institution);
                     $member_stmt->bindParam(':department', $department);
@@ -319,6 +321,20 @@ $institutions = $institutions_stmt->fetchAll(PDO::FETCH_COLUMN);
                                     <label class="form-label">Phone Number <span class="text-danger">*</span></label>
                                     <input type="tel" class="form-control" name="phone" placeholder="0XXXXXXXXX" required value="<?php echo isset($_POST['phone']) ? htmlspecialchars($_POST['phone']) : ''; ?>">
                                     <small class="text-muted">Enter 10 digits (e.g., 0241234567)</small>
+                                </div>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Gender <span class="text-danger">*</span></label>
+                                    <select class="form-select" name="gender" required>
+                                        <option value="">Select Gender</option>
+                                        <option value="Male" <?php echo (isset($_POST['gender']) && $_POST['gender'] == 'Male') ? 'selected' : ''; ?>>Male</option>
+                                        <option value="Female" <?php echo (isset($_POST['gender']) && $_POST['gender'] == 'Female') ? 'selected' : ''; ?>>Female</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <!-- Empty column for layout balance -->
                                 </div>
                             </div>
                             

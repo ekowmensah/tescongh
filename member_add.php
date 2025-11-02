@@ -28,6 +28,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $email = strtolower(str_replace(' ', '', $student_id)) . '@member.tescongh.org';
     $fullname = sanitize($_POST['fullname']);
     $phone = sanitize($_POST['phone']);
+    $gender = sanitize($_POST['gender']);
     $institution = sanitize($_POST['institution']);
     $department = sanitize($_POST['department']);
     $program = sanitize($_POST['program']);
@@ -73,6 +74,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'user_id' => $userId,
             'fullname' => $fullname,
             'phone' => $phone,
+            'gender' => $gender,
             'photo' => $photo,
             'institution' => $institution,
             'department' => $department,
@@ -139,6 +141,14 @@ include 'includes/header.php';
                             <input type="text" class="form-control" name="phone" id="phone" placeholder="0XXXXXXXXX" maxlength="10" required>
                             <small class="text-muted">Enter 10 digits (e.g., 0241234567)</small>
                             <div id="phone-feedback" class="invalid-feedback"></div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Gender <span class="text-danger">*</span></label>
+                            <select class="form-select" name="gender" required>
+                                <option value="">Select Gender</option>
+                                <option value="Male">Male</option>
+                                <option value="Female">Female</option>
+                            </select>
                         </div>
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Student ID <span class="text-danger">*</span></label>

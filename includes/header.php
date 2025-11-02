@@ -254,6 +254,12 @@
                 </a>
             </li>
             
+            <li class="nav-item">
+                <a class="nav-link <?php echo basename($_SERVER['PHP_SELF']) == 'report_voting_regions.php' ? 'active' : ''; ?>" href="report_voting_regions.php">
+                    <i class="nav-icon cil-chart-pie"></i> Voting Regions Report
+                </a>
+            </li>
+            
             <li class="nav-title">System</li>
             
             <li class="nav-item">

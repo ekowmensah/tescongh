@@ -51,6 +51,7 @@ if (!$memberData) {
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $fullname = sanitize($_POST['fullname']);
     $phone = sanitize($_POST['phone']);
+    $gender = sanitize($_POST['gender']);
     $date_of_birth = sanitize($_POST['date_of_birth']);
     $institution = sanitize($_POST['institution']);
     $department = sanitize($_POST['department']);
@@ -83,6 +84,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $updateData = [
         'fullname' => $fullname,
         'phone' => $phone,
+        'gender' => $gender,
         'date_of_birth' => $date_of_birth,
         'photo' => $photo,
         'institution' => $institution,
@@ -139,6 +141,14 @@ include 'includes/header.php';
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Phone Number <span class="text-danger">*</span></label>
                             <input type="text" class="form-control" name="phone" value="<?php echo htmlspecialchars($memberData['phone']); ?>" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Gender <span class="text-danger">*</span></label>
+                            <select class="form-select" name="gender" required>
+                                <option value="">Select Gender</option>
+                                <option value="Male" <?php echo ($memberData['gender'] == 'Male') ? 'selected' : ''; ?>>Male</option>
+                                <option value="Female" <?php echo ($memberData['gender'] == 'Female') ? 'selected' : ''; ?>>Female</option>
+                            </select>
                         </div>
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Date of Birth</label>
