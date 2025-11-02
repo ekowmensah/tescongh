@@ -156,13 +156,17 @@ include 'includes/header.php';
                         </div>
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Profile Photo</label>
-                            <?php if (!empty($memberData['photo'])): ?>
-                                <div class="mb-2">
-                                    <img src="uploads/<?php echo htmlspecialchars($memberData['photo']); ?>" alt="Current Photo" style="max-width: 100px; max-height: 100px;">
-                                </div>
-                            <?php endif; ?>
-                            <input type="file" class="form-control" name="photo" accept="image/*">
-                            <small class="text-muted">Leave blank to keep current photo</small>
+                            <input type="file" class="form-control" name="photo" id="memberPhotoInput" accept="image/*" data-preview="memberPhotoPreview" onchange="initImageCropper(this)">
+                            <small class="text-muted d-block mt-1">
+                                <i class="cil-info"></i> Click to select an image, then crop it to your preferred size
+                            </small>
+                            <div class="mt-2" id="memberPhotoPreviewContainer">
+                                <img id="memberPhotoPreview" 
+                                     src="<?php echo !empty($memberData['photo']) ? 'uploads/' . htmlspecialchars($memberData['photo']) : ''; ?>" 
+                                     alt="Photo Preview" 
+                                     style="width: 150px; height: 150px; object-fit: cover; border-radius: 8px; border: 2px solid #ddd; <?php echo empty($memberData['photo']) ? 'display: none;' : ''; ?>">
+                            </div>
+                            <small class="text-muted d-block mt-1">Leave blank to keep current photo</small>
                         </div>
                     </div>
                 </div>
@@ -508,4 +512,5 @@ window.addEventListener('DOMContentLoaded', function() {
 
 </script>
 
+<?php include 'includes/image_cropper.php'; ?>
 <?php include 'includes/footer.php'; ?>

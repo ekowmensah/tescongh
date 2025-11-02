@@ -355,13 +355,13 @@ $institutions = $institutions_stmt->fetchAll(PDO::FETCH_COLUMN);
                                             <i class="cil-image"></i> Upload Photo
                                         </button>
                                     </div>
-                                    <input type="file" class="form-control d-none" name="photo" id="photoInput" accept="image/*" required>
-                                    <input type="file" class="form-control d-none" id="cameraInput" accept="image/*" capture="user">
+                                    <input type="file" class="form-control d-none" name="photo" id="photoInput" accept="image/*" data-preview="previewImage" required>
+                                    <input type="file" class="form-control d-none" id="cameraInput" accept="image/*" capture="user" data-preview="previewImage">
                                     <div id="photoPreview" class="mt-2" style="display: none;">
-                                        <img id="previewImage" src="" alt="Preview" class="img-thumbnail" style="max-width: 200px; max-height: 200px;">
+                                        <img id="previewImage" src="" alt="Preview" class="img-thumbnail" style="max-width: 200px; max-height: 200px; object-fit: cover;">
                                         <button type="button" class="btn btn-sm btn-danger ms-2" id="removePhotoBtn">Remove</button>
                                     </div>
-                                    <small class="text-muted">Image will be automatically cropped to passport size (600x600px)</small>
+                                    <small class="text-muted"><i class="cil-info"></i> Select an image, then crop it to your preferred size (600x600px)</small>
                                 </div>
                             </div>
                             
@@ -646,20 +646,16 @@ $institutions = $institutions_stmt->fetchAll(PDO::FETCH_COLUMN);
     // Handle camera capture
     cameraInput.addEventListener('change', function(e) {
         if (this.files && this.files[0]) {
-            // Transfer the file to the main photo input
-            const dataTransfer = new DataTransfer();
-            dataTransfer.items.add(this.files[0]);
-            photoInput.files = dataTransfer.files;
-            
-            // Show preview
-            showPreview(this.files[0]);
+            // Trigger image cropper
+            initImageCropper(this);
         }
     });
 
     // Handle file upload
     photoInput.addEventListener('change', function(e) {
         if (this.files && this.files[0]) {
-            showPreview(this.files[0]);
+            // Trigger image cropper
+            initImageCropper(this);
         }
     });
 
@@ -681,5 +677,7 @@ $institutions = $institutions_stmt->fetchAll(PDO::FETCH_COLUMN);
         previewImage.src = '';
     });
     </script>
+
+<?php include 'includes/image_cropper.php'; ?>
 </body>
 </html>

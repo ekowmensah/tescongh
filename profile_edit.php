@@ -161,11 +161,16 @@ include 'includes/header.php';
                         
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Profile Photo</label>
-                            <input type="file" class="form-control" name="photo" accept="image/*">
-                            <?php if (!empty($memberData['photo'])): ?>
-                                <small class="text-muted d-block">Current: <?php echo htmlspecialchars($memberData['photo']); ?></small>
-                            <?php endif; ?>
-                            <small class="text-muted">New image will be automatically cropped to passport size (600x600px)</small>
+                            <input type="file" class="form-control" name="photo" id="photoInput" accept="image/*" data-preview="photoPreview" onchange="initImageCropper(this)">
+                            <small class="text-muted d-block mt-1">
+                                <i class="cil-info"></i> Click to select an image, then crop it to your preferred size
+                            </small>
+                            <div class="mt-2" id="photoPreviewContainer">
+                                <img id="photoPreview" 
+                                     src="<?php echo !empty($memberData['photo']) ? 'uploads/' . htmlspecialchars($memberData['photo']) : ''; ?>" 
+                                     alt="Photo Preview" 
+                                     style="width: 150px; height: 150px; object-fit: cover; border-radius: 8px; border: 2px solid #ddd; <?php echo empty($memberData['photo']) ? 'display: none;' : ''; ?>">
+                            </div>
                         </div>
                     </div>
                     
@@ -426,4 +431,5 @@ window.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 
+<?php include 'includes/image_cropper.php'; ?>
 <?php include 'includes/footer.php'; ?>
