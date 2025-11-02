@@ -276,63 +276,65 @@ include 'includes/header.php';
         <i class="cil-info"></i> No members found matching your criteria.
     </div>
 <?php else: ?>
-    <div class="row">
+    <div class="row row-cols-1 row-cols-md-2 g-2">
         <?php foreach ($members as $member): ?>
-            <div class="col-md-6 mb-4">
-                <div class="card member-card">
-                    <div class="card-body">
-                        <div class="row">
+            <div class="col">
+                <div class="card member-card h-100 shadow-sm">
+                    <div class="card-body d-flex flex-column p-4">
+                        <div class="row g-2">
                             <div class="col-4 text-center photo-container">
                                 <?php 
                                 $photo_url = '';
                                 if (!empty($member['photo'])) {
-                                    // Check if it's already a full URL or relative path
                                     if (strpos($member['photo'], 'http') === 0) {
                                         $photo_url = $member['photo'];
                                     } elseif (strpos($member['photo'], 'uploads/') === 0) {
                                         $photo_url = $member['photo'];
                                     } else {
-                                        // Assume it's just a filename, prepend uploads path
                                         $photo_url = 'uploads/' . $member['photo'];
                                     }
                                 }
                                 
                                 if ($photo_url): 
                                 ?>
-                                    <img src="<?php echo htmlspecialchars($photo_url); ?>" 
-                                         alt="<?php echo htmlspecialchars($member['fullname']); ?>" 
-                                         class="img-fluid rounded member-photo"
-                                         onerror="this.onerror=null; this.src=''; this.style.display='none'; this.parentElement.classList.add('show-placeholder');">
+                                    <div class="member-photo-wrapper">
+                                        <img src="<?php echo htmlspecialchars($photo_url); ?>" 
+                                             alt="<?php echo htmlspecialchars($member['fullname']); ?>" 
+                                             class="member-photo"
+                                             onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\'member-photo-placeholder\'><i class=\'cil-user\'></i></div>';">
+                                    </div>
                                 <?php else: ?>
-                                    <div class="member-photo-placeholder rounded">
-                                        <i class="cil-user" style="font-size: 4rem; color: #ccc;"></i>
+                                    <div class="member-photo-wrapper">
+                                        <div class="member-photo-placeholder">
+                                            <i class="cil-user"></i>
+                                        </div>
                                     </div>
                                 <?php endif; ?>
                             </div>
                             <div class="col-8">
-                                <h5 class="card-title mb-2"><?php echo htmlspecialchars($member['fullname']); ?></h5>
+                                <h5 class="card-title mb-3 text-primary"><?php echo htmlspecialchars($member['fullname']); ?></h5>
                                 
-                                <table class="table table-sm table-borderless mb-0">
-                                    <tr>
-                                        <td class="text-muted" style="width: 40%;"><strong>Student ID:</strong></td>
-                                        <td><?php echo htmlspecialchars($member['student_id'] ?? 'N/A'); ?></td>
-                                    </tr>
-                                    <tr>
-                                        <td class="text-muted"><strong>Institution:</strong></td>
-                                        <td><?php echo htmlspecialchars($member['institution']); ?></td>
-                                    </tr>
-                                    <tr>
-                                        <td class="text-muted"><strong>Campus:</strong></td>
-                                        <td><?php echo htmlspecialchars($member['campus_name'] ?? 'N/A'); ?></td>
-                                    </tr>
-                                    <tr>
-                                        <td class="text-muted"><strong>Program:</strong></td>
-                                        <td><?php echo htmlspecialchars($member['program']); ?></td>
-                                    </tr>
-                                    <tr>
-                                        <td class="text-muted"><strong>Year:</strong></td>
-                                        <td><?php echo htmlspecialchars($member['year']); ?></td>
-                                    </tr>
+                                <div class="member-info">
+                                    <div class="info-item">
+                                        <span class="info-label">Student ID:</span>
+                                        <span class="info-value fw-bold"><?php echo htmlspecialchars($member['student_id'] ?? 'N/A'); ?></span>
+                                    </div>
+                                    <div class="info-item">
+                                        <span class="info-label">Institution:</span>
+                                        <span class="info-value"><?php echo htmlspecialchars($member['institution']); ?></span>
+                                    </div>
+                                    <div class="info-item">
+                                        <span class="info-label">Campus:</span>
+                                        <span class="info-value"><?php echo htmlspecialchars($member['campus_name'] ?? 'N/A'); ?></span>
+                                    </div>
+                                    <div class="info-item">
+                                        <span class="info-label">Program:</span>
+                                        <span class="info-value"><?php echo htmlspecialchars($member['program']); ?></span>
+                                    </div>
+                            <!--        <div class="info-item">
+                                        <span class="info-label">Year:</span>
+                                        <span class="info-value"><span class="badge bg-secondary">Year <?php echo htmlspecialchars($member['year']); ?></span></span>
+                                    </div> -->
                                     <!-- <tr>
                                         <td class="text-muted"><strong>Gender:</strong></td>
                                         <td><?php echo htmlspecialchars($member['gender'] ?? 'N/A'); ?></td>
@@ -365,7 +367,7 @@ include 'includes/header.php';
                                             </span>
                                         </td>
                                     </tr> -->
-                                </table>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -406,69 +408,157 @@ include 'includes/header.php';
 <?php endif; ?>
 
 <style>
+/* Member Card Styling */
 .member-card {
-    transition: transform 0.2s, box-shadow 0.2s;
-    height: 100%;
+    transition: all 0.3s ease;
+    border: none;
+    border-radius: 12px;
+    overflow: hidden;
 }
 
 .member-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    transform: translateY(-8px);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.15) !important;
+}
+
+/* Photo Container */
+.member-photo-wrapper {
+    width: 100%;
+    aspect-ratio: 1;
+    position: relative;
 }
 
 .member-photo {
     width: 100%;
-    height: 200px;
+    height: 100%;
     object-fit: cover;
-    border: 3px solid #e9ecef;
+    border-radius: 12px;
+    border: 4px solid #e3f2fd;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    transition: all 0.3s ease;
+}
+
+.member-card:hover .member-photo {
+    border-color: #2196f3;
+    transform: scale(1.05);
 }
 
 .member-photo-placeholder {
     width: 100%;
-    height: 200px;
-    background-color: #f8f9fa;
+    height: 100%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     display: flex;
     align-items: center;
     justify-content: center;
-    border: 3px solid #e9ecef;
+    border-radius: 12px;
+    border: 4px solid #e3f2fd;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
 }
 
+.member-photo-placeholder i {
+    font-size: 3.5rem;
+    color: white;
+    opacity: 0.8;
+}
+
+/* Card Title */
 .card-title {
-    color: #2c3e50;
-    font-weight: 600;
+    font-weight: 700;
+    font-size: 1.1rem;
+    line-height: 1.3;
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid #e9ecef;
 }
 
-.table-sm td {
-    padding: 0.25rem 0;
-    font-size: 0.875rem;
-}
-
-/* Fallback placeholder for broken images */
-.photo-container.show-placeholder::after {
-    content: '';
+/* Member Info */
+.member-info {
     display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 200px;
-    height: 200px;
-    border-radius: 10px;
-    background-color: #f8f9fa;
-    border: 3px solid #e9ecef;
+    flex-direction: column;
+    gap: 0.25rem;
+    min-height: 100px;
+    flex: 1;
 }
 
-.photo-container.show-placeholder::before {
-    content: '\f007';
-    font-family: 'Font Awesome 5 Free';
-    font-size: 4rem;
-    color: #ccc;
-    position: absolute;
-    z-index: 1;
+.info-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.25rem 0;
+    border-bottom: 1px solid #f0f0f0;
+    flex-shrink: 0;
+}
+
+.info-item:last-child {
+    border-bottom: none;
+}
+
+.info-label {
+    font-size: 0.85rem;
+    color: #6c757d;
+    font-weight: 600;
+    min-width: 90px;
+}
+
+.info-value {
+    font-size: 0.875rem;
+    color: #212529;
+    text-align: right;
+    flex: 1;
+}
+
+/* Ensure consistent card widths and heights */
+.row-cols-md-2 {
+    display: flex;
+    flex-wrap: wrap;
+    margin: -0.25rem;
+}
+
+.row-cols-md-2 > .col {
+    display: flex;
+    flex: 0 0 50%;
+    max-width: 50%;
+    padding: 0.25rem;
+}
+
+.member-card {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.member-card .card-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.member-card .row {
+    flex: 1;
+}
+
+/* Ensure photo column has consistent width */
+.photo-container {
+    flex: 0 0 35%;
+    max-width: 35%;
+}
+
+.member-card .col-8 {
+    flex: 0 0 65%;
+    max-width: 65%;
+}
+
+@media (max-width: 767px) {
+    .row-cols-md-2 > .col {
+        flex: 0 0 100%;
+        max-width: 100%;
+    }
 }
 
 @media print {
     /* Hide navigation and UI elements */
     .btn, .pagination, nav, #filterPanel, .collapse,
-    .sidebar, .header, footer, .header-sticky, .text-muted {
+    .sidebar, .header, footer, .header-sticky {
         display: none !important;
     }
     
@@ -480,165 +570,190 @@ include 'includes/header.php';
     
     body {
         margin: 0;
-        padding: 15px;
+        padding: 8px;
+        background: white !important;
     }
     
     /* Page title - Professional header */
     h2 {
-        margin: 0 0 20px 0;
-        padding: 15px;
+        margin: 0 0 10px 0 !important;
+        padding: 10px !important;
         text-align: center;
-        font-size: 24px !important;
+        font-size: 20px !important;
         font-weight: bold;
         border-bottom: 3px solid #000;
         text-transform: uppercase;
         letter-spacing: 2px;
+        color: #000 !important;
     }
     
-    /* Member cards - Professional layout */
+    /* Grid layout for print - 2 Columns */
+    .row-cols-md-2 {
+        display: block !important;
+        width: 100% !important;
+        margin: 0 !important;
+        column-count: 2 !important;
+        column-gap: 6px !important;
+    }
+    
+    .row-cols-md-2 > .col {
+        width: 100% !important;
+        display: inline-block !important;
+        padding: 0 !important;
+        margin-bottom: 6px !important;
+        box-sizing: border-box;
+        break-inside: avoid !important;
+        page-break-inside: avoid !important;
+    }
+    
+    /* Member cards - Compact layout */
     .member-card {
         page-break-inside: avoid;
         box-shadow: none !important;
-        border: 2px solid #333 !important;
-        margin-bottom: 12px !important;
-        padding: 12px !important;
+        border: 2px solid #000 !important;
+        border-radius: 10px !important;
+        padding: 8px !important;
         background: white !important;
         height: auto !important;
+        transform: none !important;
     }
     
     .member-card .card-body {
         padding: 0 !important;
     }
     
-    .col-md-6 {
-        width: 50%;
-        float: left;
-        padding: 0 6px;
-        box-sizing: border-box;
+    /* Internal row spacing */
+    .member-card .row {
+        margin: 0 !important;
     }
     
-    /* Photo container - Centered circular photo */
-    .col-4 {
-        width: 30% !important;
+    /* Photo container */
+    .photo-container {
+        width: 35% !important;
         text-align: center !important;
         display: flex !important;
-        align-items: center !important;
+        align-items: flex-start !important;
         justify-content: center !important;
-        padding: 8px !important;
+        padding: 3px !important;
     }
     
-    .col-8 {
-        width: 70% !important;
+    .member-card .col-8 {
+        width: 65% !important;
         padding-left: 8px !important;
     }
     
-    /* Photo styling - Circular with border */
-    .member-photo {
-        width: 110px !important;
-        height: 110px !important;
-        object-fit: cover !important;
-        border: 3px solid #333 !important;
-        border-radius: 50% !important;
-        -webkit-print-color-adjust: exact !important;
-        print-color-adjust: exact !important;
-        display: block !important;
+    /* Photo wrapper and styling - Rounded square */
+    .member-photo-wrapper {
+        width: 90px !important;
+        height: 90px !important;
         margin: 0 auto !important;
     }
     
+    .member-photo {
+        width: 90px !important;
+        height: 90px !important;
+        object-fit: cover !important;
+        border: 3px solid #2196f3 !important;
+        border-radius: 10px !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+        display: block !important;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.2) !important;
+    }
+    
     .member-photo-placeholder {
-        width: 110px !important;
-        height: 110px !important;
-        border: 3px solid #333 !important;
-        border-radius: 50% !important;
-        background-color: #e0e0e0 !important;
+        width: 90px !important;
+        height: 90px !important;
+        border: 3px solid #2196f3 !important;
+        border-radius: 10px !important;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
         display: flex !important;
         align-items: center !important;
         justify-content: center !important;
         margin: 0 auto !important;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.2) !important;
     }
     
     .member-photo-placeholder i {
-        font-size: 2.5rem !important;
-        color: #666 !important;
+        font-size: 2.2rem !important;
+        color: white !important;
     }
     
     /* Card title - Member name */
     .card-title {
-        font-size: 14px !important;
+        font-size: 12px !important;
         font-weight: bold !important;
         margin-bottom: 6px !important;
         padding-bottom: 4px !important;
-        border-bottom: 2px solid #000 !important;
-        color: #000 !important;
+        border-bottom: 2px solid #2196f3 !important;
+        color: #2196f3 !important;
         text-transform: uppercase;
-        letter-spacing: 0.8px;
+        letter-spacing: 0.5px;
+        line-height: 1.2 !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
     }
     
-    /* Table styling - Clean and compact */
-    .table-sm {
-        margin-bottom: 0 !important;
+    /* Member info styling - Compact */
+    .member-info {
+        display: block !important;
+        gap: 0 !important;
+        min-height: auto !important;
     }
     
-    .table-sm td {
-        font-size: 10px !important;
-        padding: 1px 0 !important;
-        line-height: 1.5 !important;
-        vertical-align: top !important;
-        border: none !important;
+    .info-item {
+        display: flex !important;
+        justify-content: space-between !important;
+        padding: 2px 0 !important;
+        border-bottom: 1px solid #e0e0e0 !important;
+        page-break-inside: avoid;
     }
     
-    .table-sm td:first-child {
-        width: 42% !important;
+    .info-item:last-child {
+        border-bottom: none !important;
+    }
+    
+    .info-label {
+        font-size: 9px !important;
         font-weight: 700 !important;
-        color: #000 !important;
-        display: table-cell !important;
+        color: #666 !important;
+        min-width: 70px !important;
     }
     
-    .table-sm td:last-child {
-        width: 58% !important;
+    .info-value {
+        font-size: 9px !important;
         color: #000 !important;
-        font-weight: 500;
-        display: table-cell !important;
-    }
-    
-    /* Show labels on print */
-    .table-sm tr {
-        display: table-row !important;
+        text-align: right !important;
+        font-weight: 600 !important;
     }
     
     /* Badges */
     .badge {
         border: 1px solid #000 !important;
-        padding: 2px 6px !important;
-        font-size: 8px !important;
+        padding: 1px 4px !important;
+        font-size: 7px !important;
         font-weight: bold !important;
         background: white !important;
         color: #000 !important;
         border-radius: 3px !important;
     }
     
-    /* Ensure proper layout */
-    .row {
-        page-break-inside: avoid;
-        margin: 0 !important;
-    }
-    
-    /* Remove hover effects */
-    .member-card:hover {
-        transform: none !important;
-    }
-    
-    /* Force images to print */
+    /* Force images and colors to print */
     img {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+    
+    * {
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
     }
     
     /* Page breaks */
     @page {
-        margin: 1cm;
+        margin: 0.6cm;
         size: A4;
     }
 }
