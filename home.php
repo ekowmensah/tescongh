@@ -633,6 +633,53 @@ require_once 'classes/Gallery.php';
     </section>
     <?php endif; ?>
     
+    <!-- Follow Us Section -->
+    <section class="py-5" style="background-color: #f9fafb;">
+        <div class="container">
+            <div class="row align-items-center g-4">
+                <div class="col-md-4 text-center">
+                    <img src="assets/images/logo.png" alt="UEW-TESCON Logo" class="img-fluid" style="max-width: 220px;">
+                </div>
+                <div class="col-md-8">
+                    <h2 class="mb-3" style="color: var(--primary-blue); font-weight: 800;">Follow UEW-TESCON Online</h2>
+                    <p class="mb-4 text-muted">Stay connected with our activities, announcements, and campaigns across all platforms.</p>
+                    <div class="row g-3">
+                        <div class="col-sm-6">
+                            <div class="p-3 bg-white rounded-3 shadow-sm h-100">
+                                <h5 class="mb-1">Website</h5>
+                                <a href="https://www.uewtescon.com" target="_blank" class="text-decoration-none">www.uewtescon.com</a>
+                            </div>
+                        </div>
+                        <div class="col-sm-6">
+                            <div class="p-3 bg-white rounded-3 shadow-sm h-100">
+                                <h5 class="mb-1">Email</h5>
+                                <a href="mailto:uewtescon@gmail.com" class="text-decoration-none">uewtescon@gmail.com</a>
+                            </div>
+                        </div>
+                        <div class="col-sm-6">
+                            <div class="p-3 bg-white rounded-3 shadow-sm h-100">
+                                <h5 class="mb-1">TikTok</h5>
+                                <a href="https://tiktok.com/@uew_tescon" target="_blank" class="text-decoration-none">tiktok.com/@uew_tescon</a>
+                            </div>
+                        </div>
+                        <div class="col-sm-6">
+                            <div class="p-3 bg-white rounded-3 shadow-sm h-100">
+                                <h5 class="mb-1">Facebook</h5>
+                                <a href="https://ln.run/3Uw9V" target="_blank" class="text-decoration-none">facebook.com/uewtescon</a>
+                            </div>
+                        </div>
+                        <div class="col-sm-6">
+                            <div class="p-3 bg-white rounded-3 shadow-sm h-100">
+                                <h5 class="mb-1">WhatsApp Channel</h5>
+                                <a href="https://ln.run/-Q6Lz" target="_blank" class="text-decoration-none">Join our WhatsApp Channel</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    
     <!-- CTA Section -->
     <section class="cta">
         <div class="container">
