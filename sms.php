@@ -7,6 +7,8 @@ require_once 'includes/auth.php';
 require_once 'classes/Member.php';
 require_once 'classes/Region.php';
 require_once 'classes/MnotifySMSService.php';
+require_once 'classes/SMSTemplateRenderer.php';
+require_once 'classes/SMSClient.php';
 
 if (!hasAnyRole(['Admin', 'Executive'])) {
     setFlashMessage('danger', 'You do not have permission to access this page');
@@ -28,6 +30,16 @@ $query = "SELECT * FROM sms_templates ORDER BY name ASC";
 $stmt = $db->query($query);
 $templates = $stmt->fetchAll();
 
+// Get available dues years for selector
+$duesYears = [];
+try {
+    $duesYearQuery = "SELECT year FROM dues ORDER BY year DESC";
+    $duesStmt = $db->query($duesYearQuery);
+    $duesYears = $duesStmt->fetchAll(PDO::FETCH_COLUMN);
+} catch (Exception $e) {
+    $duesYears = [];
+}
+
 // Get custom lists
 $query = "SELECT cl.*, COUNT(clm.member_id) as member_count 
           FROM custom_lists cl 
@@ -44,6 +56,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!in_array($provider, ['mnotify', 'hubtel'], true)) {
         $provider = 'mnotify';
     }
+    $selectedDuesYear = isset($_POST['dues_year']) && $_POST['dues_year'] !== '' ? (int)$_POST['dues_year'] : null;
     $recipients = [];
     
     // Get recipients based on type
@@ -91,18 +104,38 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
     
+    // Try to resolve dues-related placeholders once (same for all recipients)
+    $duesYear = null;
+    $duesAmountFormatted = null;
+    try {
+        if ($selectedDuesYear) {
+            $duesQuery = "SELECT year, amount FROM dues WHERE year = :year LIMIT 1";
+            $duesStmt = $db->prepare($duesQuery);
+            $duesStmt->bindParam(':year', $selectedDuesYear, PDO::PARAM_INT);
+            $duesStmt->execute();
+        } else {
+            $duesQuery = "SELECT year, amount FROM dues ORDER BY year DESC LIMIT 1";
+            $duesStmt = $db->query($duesQuery);
+        }
+
+        $latestDues = $duesStmt->fetch();
+        if ($latestDues) {
+            $duesYear = $latestDues['year'];
+            $duesAmountFormatted = number_format($latestDues['amount'], 2);
+        }
+    } catch (Exception $e) {
+        // If dues lookup fails, we simply leave {year} and {amount} unreplaced
+    }
+
     $sentCount = 0;
     $failedCount = 0;
     $lastError = '';
 
-    $smsService = null;
-    if ($provider === 'mnotify') {
-        try {
-            $smsService = new MnotifySMSService();
-        } catch (Exception $e) {
-            setFlashMessage('danger', 'SMS configuration error: ' . $e->getMessage());
-            redirect('sms.php');
-        }
+    try {
+        $smsClient = SMSClientFactory::create($provider);
+    } catch (Exception $e) {
+        setFlashMessage('danger', 'SMS configuration error: ' . $e->getMessage());
+        redirect('sms.php');
     }
 
     foreach ($recipients as $recipient) {
@@ -112,30 +145,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $localPhone = '0' . substr($formattedPhone, 4);
         }
 
-        $personalizedMessage = str_replace(
-            ['{name}', '{fullname}', '{student_id}'],
-            [$recipient['fullname'], $recipient['fullname'], $recipient['student_id']],
-            $message
-        );
+        // Global template replacements (e.g. dues)
+        $baseMessage = SMSTemplateRenderer::render($message, [
+            'year'   => $duesYear,
+            'amount' => $duesAmountFormatted,
+        ]);
 
-        if ($provider === 'mnotify' && $smsService) {
-            $result = $smsService->sendQuickSMS([$localPhone], $personalizedMessage);
-            $status = $result['success'] ? 'sent' : 'failed';
-            if (!$result['success'] && empty($lastError) && !empty($result['error'])) {
-                $lastError = $result['error'];
-            }
-        } else {
-            // Hubtel (or fallback): keep previous behavior of just logging as sent
-            $status = 'sent';
+        // Per-recipient personalization
+        $personalizedMessage = SMSTemplateRenderer::render($baseMessage, [
+            'name'       => $recipient['fullname'],
+            'fullname'   => $recipient['fullname'],
+            'student_id' => $recipient['student_id'],
+        ]);
+
+        $result = $smsClient->send($localPhone, $personalizedMessage);
+        $status = $result['success'] ? 'sent' : 'failed';
+        if (!$result['success'] && empty($lastError) && !empty($result['error'])) {
+            $lastError = $result['error'];
         }
 
-        $logQuery = "INSERT INTO sms_logs (sender_id, recipient_phone, message, status, sent_at) 
-                     VALUES (:sender_id, :phone, :message, :status, NOW())";
+        $logQuery = "INSERT INTO sms_logs (sender_id, recipient_phone, message, status, message_id, error_message, cost, sent_at) 
+                     VALUES (:sender_id, :phone, :message, :status, :message_id, :error_message, :cost, NOW())";
         $logStmt = $db->prepare($logQuery);
         $logStmt->bindValue(':sender_id', $_SESSION['user_id']);
         $logStmt->bindParam(':phone', $localPhone);
         $logStmt->bindParam(':message', $personalizedMessage);
         $logStmt->bindParam(':status', $status);
+        $logStmt->bindValue(':message_id', $result['message_id'] ?? null);
+        $logStmt->bindValue(':error_message', $result['error'] ?? null);
+        $logStmt->bindValue(':cost', null);
 
         if ($logStmt->execute()) {
             if ($status === 'sent') {
@@ -190,6 +228,19 @@ include 'includes/header.php';
                             <option value="hubtel">Hubtel</option>
                         </select>
                     </div>
+
+                    <?php if (!empty($duesYears)): ?>
+                <!--    <div class="mb-3">
+                        <label class="form-label">Dues Year (for dues-related templates)</label>
+                        <select class="form-select" name="dues_year">
+                            <option value="">Latest Dues Year</option>
+                            <?php foreach ($duesYears as $year): ?>
+                                <option value="<?php echo (int)$year; ?>"><?php echo (int)$year; ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                        <small class="text-muted">If you are sending dues reminders, select the specific dues year here.</small>
+                    </div> -->
+                    <?php endif; ?>
 
                     <div class="mb-3">
                         <label class="form-label">Select Recipients <span class="text-danger">*</span></label>
@@ -267,7 +318,7 @@ include 'includes/header.php';
                             <option value="">Select Member</option>
                         </select>
                     </div>
-                    
+                 <!--   
                     <div class="mb-3">
                         <label class="form-label">Use Template (Optional)</label>
                         <select class="form-select" id="template_select">
@@ -279,7 +330,7 @@ include 'includes/header.php';
                             <?php endforeach; ?>
                         </select>
                         <small class="text-muted">Available placeholders: {name}, {fullname}, {student_id}</small>
-                    </div>
+                    </div> -->
                     
                     <div class="mb-3">
                         <label class="form-label">Message <span class="text-danger">*</span></label>

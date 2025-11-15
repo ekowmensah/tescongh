@@ -18,5 +18,5 @@ if (!defined('MNOTIFY_API_KEY')) {
 
 // Default sender ID for SMS (must be registered and approved, max 11 chars)
 if (!defined('MNOTIFY_SENDER_ID')) {
-    define('MNOTIFY_SENDER_ID', 'UEW-TESCON');
+    define('MNOTIFY_SENDER_ID', 'TESCON- UEW');
 }
