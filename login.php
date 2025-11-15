@@ -344,7 +344,7 @@ if (isset($_GET['timeout'])) {
                                             TG
                                         <?php endif; ?>
                                     </div>
-                                    <h1 class="text-center mb-2">TESCON Ghana</h1>
+                                    <h1 class="text-center mb-2">UEW TESCON</h1>
                                     <p class="text-medium-emphasis text-center mb-4">Member Login Portal</p>
                             
                             <?php if (!empty($error)): ?>
