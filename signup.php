@@ -495,7 +495,7 @@ $institutions = $institutions_stmt->fetchAll(PDO::FETCH_COLUMN);
                         <a href="home.php" class="text-white text-decoration-none"><i class="cil-arrow-left"></i> Back to Home</a>
                     </p>
                     <p class="text-white">
-                        <small>&copy; <?php echo date('Y'); ?> TESCON Ghana. All rights reserved.</small>
+                        <small>&copy; <?php echo date('Y'); ?> UEW-TESCON. All rights reserved.</small>
                     </p>
                 </div>
             </div>

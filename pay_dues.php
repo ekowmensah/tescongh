@@ -275,8 +275,8 @@ include 'includes/header.php';
                     <div class="card-body">
                         <p class="small">If you have any issues with payment, please contact:</p>
                         <p class="small mb-0">
-                            <i class="cil-envelope-closed"></i> treasurer@tescongh.org<br>
-                            <i class="cil-phone"></i> +233 XX XXX XXXX
+                            <i class="cil-envelope-closed"></i> uewtescon@gmail.com<br>
+                            <i class="cil-phone"></i> +233 243 115 135
                         </p>
                     </div>
                 </div>

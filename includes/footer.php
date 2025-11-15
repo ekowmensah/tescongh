@@ -5,7 +5,7 @@
             <div class="container-fluid">
                 <div class="row">
                     <div class="col-md-6">
-                        <span>&copy; <?php echo date('Y'); ?> TESCON Ghana. All rights reserved.</span>
+                        <span>&copy; <?php echo date('Y'); ?> UEW-TESCON. All rights reserved.</span>
                     </div>
                     <div class="col-md-6 text-end">
                         <span>Version <?php echo APP_VERSION; ?></span>

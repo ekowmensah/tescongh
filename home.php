@@ -433,6 +433,67 @@ require_once 'classes/Gallery.php';
         </div>
     </section>
     
+    <!-- Welcome Messages Section -->
+    <section class="py-5" style="background-color: #f3f4f6;">
+        <div class="container">
+            <div class="section-title">
+                <h2>Welcome to TESCON UEW</h2>
+                <p>Messages from our leadership to inspire your journey</p>
+            </div>
+
+            <!-- Row 1: Hon. Alexander Afenyo-Markin -->
+            <div class="row g-4 align-items-center mb-5">
+                <div class="col-lg-4 col-md-5 text-center">
+                    <img src="assets/images/welcome/afenyo-markin.jpg" alt="Hon. Alexander Afenyo-Markin" class="img-fluid rounded-4 shadow" style="width: 100%; height: auto;">
+                </div>
+                <div class="col-lg-8 col-md-7">
+                    <div class="h-100 d-flex flex-column justify-content-center">
+                        <h3 class="fw-bold mb-1">Hon. Alexander Afenyo-Markin</h3>
+                        <p class="mb-1">MP for Effutu • Minority Leader of Ghana’s 9th Parliament</p>
+                        <p class="mb-3">3rd Deputy Speaker, ECOWAS Parliament</p>
+                        <p class="mb-3">
+                            Welcome to TESCON–UEW.
+                            You are the future leaders of our party, our institutions, and our nation.
+                            Use this platform to learn, engage, and lead with purpose.
+                            Together, we shape Ghana’s future.
+                        </p>
+                        <p class="fw-semibold mb-0">Ayekoo to Effutu Constituency</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Row 2: Emmanuel Osei -->
+            <div class="row g-4 align-items-center flex-column-reverse flex-md-row mb-4">
+                <div class="col-lg-8 col-md-7">
+                    <div class="h-100 d-flex flex-column justify-content-center">
+                        <h3 class="fw-bold mb-2">Welcome to TESCON–UEW</h3>
+                        <p class="mb-3">
+                            Welcome to TESCON–UEW, the student wing of the New Patriotic Party on the University of Education, Winneba campus.
+                            Here, we train leaders, build thinkers, and empower students for national service and political impact.
+                        </p>
+                        <p class="mb-3">
+                            Join us, engage, and lead with purpose — for Party, for Country, for Ghana’s future.
+                        </p>
+                        <p class="mb-1 fw-semibold">Commitment Without Inducement.</p>
+                        <p class="mb-0">Emmanuel Osei<br>President 2025/26<br>UEW-TESCON</p>
+                    </div>
+                </div>
+                <div class="col-lg-4 col-md-5 text-center mb-4 mb-md-0">
+                    <img src="assets/images/welcome/emmanuel-osei.jpg" alt="Emmanuel Osei" class="img-fluid rounded-4 shadow" style="width: 100%; height: auto;">
+                </div>
+            </div>
+
+            <!-- Tescon Regulation Download Button -->
+            <div class="row mt-3">
+                <div class="col text-center">
+                    <a href="assets/docs/tescon-regulations.pdf" class="btn btn-primary btn-lg px-4 py-2" target="_blank" rel="noopener">
+                        Download Tescon Regulation (PDF)
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+    
     <!-- Features Section -->
     <section class="features">
         <div class="container">
@@ -607,25 +668,25 @@ require_once 'classes/Gallery.php';
                 <div class="footer-section">
                     <h4>Resources</h4>
                     <ul>
-                        <li><a href="#">Constitution</a></li>
-                        <li><a href="#">Guidelines</a></li>
+                        <li><a href="assets/docs/tescon-regulations.pdf" target="_blank">Regulations</a></li>
+                        <li><a href="#">MP's Corner</a></li>
                         <li><a href="#">Events</a></li>
-                        <li><a href="#">News</a></li>
+                        <li><a href="#">NPP News</a></li>
                     </ul>
                 </div>
                 
                 <div class="footer-section">
                     <h4>Contact</h4>
                     <ul>
-                        <li>Email: info@tesconghana.org</li>
-                        <li>Phone: +233 XX XXX XXXX</li>
-                        <li>Address: Accra, Ghana</li>
+                        <li>Email: uewtescon@gmail.com</li>
+                        <li>Phone: +233 243 115 135</li>
+                        <li>Address: University of Education, Winneba (Main Campus)</li>
                     </ul>
                 </div>
             </div>
             
             <div class="footer-bottom">
-                <p>&copy; <?php echo date('Y'); ?> TESCON Ghana. All rights reserved.</p>
+                <p>&copy; <?php echo date('Y'); ?> UEW-TESCON. All rights reserved.</p>
             </div>
         </div>
     </footer>

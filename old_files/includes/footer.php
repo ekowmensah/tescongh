@@ -22,8 +22,8 @@
             <div class="col-md-4">
                 <h6 class="mb-3">Contact Us</h6>
                 <ul class="list-unstyled text-muted small">
-                    <li><i class="fas fa-envelope me-2"></i> info@tesconghana.org</li>
-                    <li><i class="fas fa-phone me-2"></i> +233 XX XXX XXXX</li>
+                    <li><i class="fas fa-envelope me-2"></i> uewtescon@gmail.com</li>
+                    <li><i class="fas fa-phone me-2"></i> +233 243 115 135</li>
                     <li class="mt-3">
                         <a href="#" class="text-muted me-3"><i class="fab fa-facebook fa-lg"></i></a>
                         <a href="#" class="text-muted me-3"><i class="fab fa-twitter fa-lg"></i></a>
@@ -35,7 +35,7 @@
         <hr class="my-4 bg-secondary">
         <div class="row">
             <div class="col-md-6 text-center text-md-start">
-                <p class="text-muted small mb-0">&copy; <?php echo date('Y'); ?> TESCON Ghana. All rights reserved.</p>
+                <p class="text-muted small mb-0">&copy; <?php echo date('Y'); ?> UEW-TESCON. All rights reserved.</p>
             </div>
             <div class="col-md-6 text-center text-md-end">
                 <p class="text-muted small mb-0">

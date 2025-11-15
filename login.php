@@ -409,7 +409,7 @@ if (isset($_GET['timeout'])) {
                             </a>
                         </p>
                         <p class="text-white mb-0">
-                            <small>&copy; <?php echo date('Y'); ?> TESCON Ghana. All rights reserved.</small>
+                            <small>&copy; <?php echo date('Y'); ?> UEW-TESCON. All rights reserved.</small>
                         </p>
                     </div>
                 </div>
