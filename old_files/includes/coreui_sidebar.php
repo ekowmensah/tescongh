@@ -1,7 +1,7 @@
 <div class="sidebar sidebar-dark sidebar-fixed" id="sidebar">
     <div class="sidebar-brand d-none d-md-flex">
         <i class="fas fa-graduation-cap me-2"></i>
-        TESCON Ghana
+        UEW-TESCON
     </div>
     
     <ul class="sidebar-nav" data-coreui="navigation" data-simplebar="">

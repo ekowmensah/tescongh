@@ -4,10 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="description" content="TESCON Ghana - Tertiary Students Confederacy of the New Patriotic Party">
-    <meta name="author" content="TESCON Ghana">
+    <meta name="description" content="UEW-TESCON - Tertiary Students Confederacy of the New Patriotic Party">
+    <meta name="author" content="UEW-TESCON">
     
-    <title><?php echo $pageTitle ?? 'TESCON Ghana'; ?></title>
+    <title><?php echo $pageTitle ?? 'UEW-TESCON'; ?></title>
     
     <!-- Favicon -->
     <link rel="icon" type="image/x-icon" href="assets/images/favicon.ico">

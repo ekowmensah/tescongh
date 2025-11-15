@@ -7,7 +7,7 @@ require_once 'includes/security.php';
 
 startSecureSession();
 
-$pageTitle = "Dashboard - TESCON Ghana";
+$pageTitle = "Dashboard - UEWTESCON";
 $breadcrumbs = [
     ['title' => 'Dashboard', 'url' => '#']
 ];
@@ -115,7 +115,7 @@ include 'includes/coreui_head.php';
     <div class="col-md-12">
         <div class="card">
             <div class="card-header">
-                <i class="fas fa-home me-2"></i>Welcome to TESCON Ghana
+                <i class="fas fa-home me-2"></i>Welcome to UEW TESCON
             </div>
             <div class="card-body">
                 <h5 class="card-title">Tertiary Students Confederacy of the New Patriotic Party</h5>

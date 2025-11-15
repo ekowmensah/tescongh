@@ -153,7 +153,7 @@ class SMSNotifications {
             $template = $stmt->fetch();
 
             $message = $template ? $template['content'] :
-                "Welcome to TESCON Ghana! Complete your registration and pay your dues to access all member benefits. Visit our portal for more information.";
+                "Welcome to UEW-TESCON! Complete your registration and pay your dues to access all member benefits. Visit our portal for more information.";
 
             return $this->smsService->sendSMS($member['phone'], $message);
 

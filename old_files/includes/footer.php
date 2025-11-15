@@ -2,7 +2,7 @@
     <div class="container">
         <div class="row">
             <div class="col-md-4 mb-3 mb-md-0">
-                <h5 class="mb-3">TESCON Ghana</h5>
+                <h5 class="mb-3">UEW-TESCON</h5>
                 <p class="text-muted">Tertiary Students Confederacy of the New Patriotic Party</p>
                 <p class="text-muted small">Empowering students, building leaders, shaping Ghana's future.</p>
             </div>

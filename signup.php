@@ -287,7 +287,7 @@ $institutions = $institutions_stmt->fetchAll(PDO::FETCH_COLUMN);
                 <div class="card register-card">
                     <div class="card-body p-4 p-md-5">
                         <div class="brand-logo">TG</div>
-                        <h1 class="text-center mb-2">Join TESCON Ghana</h1>
+                        <h1 class="text-center mb-2">Join UEW-TESCON</h1>
                         <p class="text-medium-emphasis text-center mb-4">Register as a new member</p>
                         
                         <?php if (!empty($error)): ?>

@@ -1,10 +1,12 @@
 <?php
 require_once 'config/config.php';
 require_once 'config/Database.php';
+require_once 'config/mnotify.php';
 require_once 'includes/functions.php';
 require_once 'includes/auth.php';
 require_once 'classes/Member.php';
 require_once 'classes/Region.php';
+require_once 'classes/MnotifySMSService.php';
 
 if (!hasAnyRole(['Admin', 'Executive'])) {
     setFlashMessage('danger', 'You do not have permission to access this page');
@@ -38,6 +40,10 @@ $customLists = $stmt->fetchAll();
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $recipient_type = sanitize($_POST['recipient_type']);
     $message = sanitize($_POST['message']);
+    $provider = isset($_POST['provider']) ? sanitize($_POST['provider']) : 'mnotify';
+    if (!in_array($provider, ['mnotify', 'hubtel'], true)) {
+        $provider = 'mnotify';
+    }
     $recipients = [];
     
     // Get recipients based on type
@@ -85,36 +91,69 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
     
-    // Send SMS to each recipient
     $sentCount = 0;
     $failedCount = 0;
-    
+    $lastError = '';
+
+    $smsService = null;
+    if ($provider === 'mnotify') {
+        try {
+            $smsService = new MnotifySMSService();
+        } catch (Exception $e) {
+            setFlashMessage('danger', 'SMS configuration error: ' . $e->getMessage());
+            redirect('sms.php');
+        }
+    }
+
     foreach ($recipients as $recipient) {
-        $phone = formatPhoneNumber($recipient['phone']);
-        
-        // Replace placeholders in message
+        $formattedPhone = formatPhoneNumber($recipient['phone']);
+        $localPhone = $recipient['phone'];
+        if (strpos($formattedPhone, '+233') === 0 && strlen($formattedPhone) === 13) {
+            $localPhone = '0' . substr($formattedPhone, 4);
+        }
+
         $personalizedMessage = str_replace(
             ['{name}', '{fullname}', '{student_id}'],
             [$recipient['fullname'], $recipient['fullname'], $recipient['student_id']],
             $message
         );
-        
-        // Log SMS (in production, this would call Hubtel API)
+
+        if ($provider === 'mnotify' && $smsService) {
+            $result = $smsService->sendQuickSMS([$localPhone], $personalizedMessage);
+            $status = $result['success'] ? 'sent' : 'failed';
+            if (!$result['success'] && empty($lastError) && !empty($result['error'])) {
+                $lastError = $result['error'];
+            }
+        } else {
+            // Hubtel (or fallback): keep previous behavior of just logging as sent
+            $status = 'sent';
+        }
+
         $logQuery = "INSERT INTO sms_logs (sender_id, recipient_phone, message, status, sent_at) 
-                     VALUES (:sender_id, :phone, :message, 'sent', NOW())";
+                     VALUES (:sender_id, :phone, :message, :status, NOW())";
         $logStmt = $db->prepare($logQuery);
         $logStmt->bindValue(':sender_id', $_SESSION['user_id']);
-        $logStmt->bindParam(':phone', $phone);
+        $logStmt->bindParam(':phone', $localPhone);
         $logStmt->bindParam(':message', $personalizedMessage);
-        
+        $logStmt->bindParam(':status', $status);
+
         if ($logStmt->execute()) {
-            $sentCount++;
+            if ($status === 'sent') {
+                $sentCount++;
+            } else {
+                $failedCount++;
+            }
         } else {
             $failedCount++;
         }
     }
     
-    setFlashMessage('success', "SMS sent to $sentCount recipient(s). Failed: $failedCount");
+    $messageText = "SMS sent to $sentCount recipient(s). Failed: $failedCount";
+    if ($failedCount > 0 && !empty($lastError)) {
+        $messageText .= '. Last error: ' . $lastError;
+    }
+
+    setFlashMessage('success', $messageText);
     redirect('sms.php');
 }
 
@@ -144,6 +183,14 @@ include 'includes/header.php';
                     <strong>Compose SMS</strong>
                 </div>
                 <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label">Provider</label>
+                        <select class="form-select" name="provider">
+                            <option value="mnotify" selected>mNotify</option>
+                            <option value="hubtel">Hubtel</option>
+                        </select>
+                    </div>
+
                     <div class="mb-3">
                         <label class="form-label">Select Recipients <span class="text-danger">*</span></label>
                         <select class="form-select" name="recipient_type" id="recipient_type" required>

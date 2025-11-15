@@ -9,7 +9,7 @@ require_once 'classes/Gallery.php';
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TESCON Ghana - Tertiary Students Confederacy of NPP</title>
+    <title>UEW-TESCON - Tertiary Students Confederacy of NPP</title>
     
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -416,7 +416,7 @@ require_once 'classes/Gallery.php';
         <div class="container">
             <div class="row align-items-center">
                 <div class="col-lg-7 hero-content">
-                    <h1>TESCON GHANA</h1>
+                    <h1>UEW-TESCON</h1>
                     <p>Tertiary Students Confederacy of the New Patriotic Party</p>
                     <p class="mb-4">Empowering student leaders. Building Ghana's future.</p>
                     <div class="hero-buttons">
@@ -565,8 +565,7 @@ require_once 'classes/Gallery.php';
             </div>
         </div>
     </section>
-    
-    <!-- Stats Section -->
+  <!--  Stats Section 
     <section class="stats">
         <div class="container">
             <div class="row">
@@ -597,7 +596,7 @@ require_once 'classes/Gallery.php';
             </div>
         </div>
     </section>
-    
+    -->
     <!-- Gallery Section -->
     <?php
     // Database connection already initialized at top of file
@@ -650,7 +649,7 @@ require_once 'classes/Gallery.php';
         <div class="container">
             <div class="footer-content">
                 <div class="footer-section">
-                    <h4>TESCON Ghana</h4>
+                    <h4>UEW-TESCON</h4>
                     <p>Tertiary Students Confederacy of the New Patriotic Party</p>
                     <p>Building leaders. Shaping Ghana's future.</p>
                 </div>

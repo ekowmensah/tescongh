@@ -5,10 +5,10 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no">
-    <meta name="description" content="TESCON Ghana - Tertiary Students Confederacy of the New Patriotic Party">
-    <meta name="author" content="TESCON Ghana">
+    <meta name="description" content="UEW-TESCON - Tertiary Students Confederacy of the New Patriotic Party">
+    <meta name="author" content="UEW-TESCON">
     
-    <title><?php echo $pageTitle ?? 'TESCON Ghana'; ?></title>
+    <title><?php echo $pageTitle ?? 'UEW-TESCON'; ?></title>
     
     <!-- CoreUI CSS -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@coreui/coreui@4.2.0/dist/css/coreui.min.css">
