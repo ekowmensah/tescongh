@@ -11,6 +11,11 @@ require_once 'classes/Gallery.php';
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>UEW-TESCON - Tertiary Students Confederacy of NPP</title>
     
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="assets/images/logo.png">
+    <link rel="shortcut icon" type="image/png" href="assets/images/logo.png">
+    <link rel="apple-touch-icon" href="assets/images/logo.png">
+    
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- CoreUI Icons -->
@@ -41,24 +46,15 @@ require_once 'classes/Gallery.php';
         
         /* Hero Section */
         .hero {
-            background: linear-gradient(135deg, var(--primary-blue) 0%, #1e3a8a 50%, var(--primary-red) 100%);
+            background: 
+                linear-gradient(135deg, rgba(30, 64, 175, 0.5) 0%, rgba(30, 58, 138, 0.5) 50%, rgba(220, 38, 38, 0.5) 100%),
+                url('assets/images/elephant-bg.png') center/cover no-repeat;
+            background-color: #1e40af;
             min-height: 100vh;
             display: flex;
             align-items: center;
             position: relative;
             overflow: hidden;
-        }
-        
-        .hero::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320"><path fill="rgba(255,255,255,0.05)" d="M0,96L48,112C96,128,192,160,288,160C384,160,480,128,576,122.7C672,117,768,139,864,138.7C960,139,1056,117,1152,101.3C1248,85,1344,75,1392,69.3L1440,64L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path></svg>');
-            background-size: cover;
-            background-position: bottom;
         }
         
         .hero-content {
@@ -414,19 +410,14 @@ require_once 'classes/Gallery.php';
     <!-- Hero Section -->
     <section class="hero">
         <div class="container">
-            <div class="row align-items-center">
-                <div class="col-lg-7 hero-content">
+            <div class="row align-items-center justify-content-center">
+                <div class="col-lg-8 text-center hero-content">
                     <h1>UEW-TESCON</h1>
                     <p>Tertiary Students Confederacy of the New Patriotic Party</p>
                     <p class="mb-4">Empowering student leaders. Building Ghana's future.</p>
                     <div class="hero-buttons">
                         <a href="login.php" class="btn btn-hero btn-hero-primary">Member Login</a>
                         <a href="register.php" class="btn btn-hero btn-hero-outline">Join TESCON</a>
-                    </div>
-                </div>
-                <div class="col-lg-5 text-center d-none d-lg-block">
-                    <div class="hero-image-container">
-                        <img src="assets/images/leadership/team.jpg" alt="TESCON Leadership Team" class="hero-image">
                     </div>
                 </div>
             </div>
@@ -437,7 +428,7 @@ require_once 'classes/Gallery.php';
     <section class="py-5" style="background-color: #f3f4f6;">
         <div class="container">
             <div class="section-title">
-                <h2>Welcome to TESCON UEW</h2>
+                <h2>Welcome to UEW-TESCON</h2>
                 <p>Messages from our leadership to inspire your journey</p>
             </div>
 

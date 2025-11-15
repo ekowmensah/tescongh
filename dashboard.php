@@ -16,11 +16,28 @@ $member = new Member($db);
 $isRegularMember = hasRole('Member') && !hasAnyRole(['Admin', 'Executive', 'Patron']);
 $canViewStats = hasAnyRole(['Admin', 'Executive', 'Patron']);
 
+// Initialize stats with default values
+$stats = [
+    'total_members' => 0,
+    'active_members' => 0,
+    'executives' => 0,
+    'patrons' => 0,
+    'members_by_region' => [],
+    'members_by_status' => []
+];
+
 // Get statistics only for authorized users
 if ($canViewStats) {
-    $stats = $member->getStatistics();
-    // Get recent members
-    $recentMembers = $member->getAll(5, 0);
+    try {
+        $statsData = $member->getStatistics();
+        if ($statsData && is_array($statsData)) {
+            $stats = array_merge($stats, $statsData);
+        }
+        // Get recent members
+        $recentMembers = $member->getAll(5, 0);
+    } catch (Exception $e) {
+        error_log("Error fetching statistics: " . $e->getMessage());
+    }
 } else {
     // Regular members see their own profile data
     $currentUserId = $_SESSION['user_id'];
