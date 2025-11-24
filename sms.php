@@ -224,8 +224,8 @@ include 'includes/header.php';
                     <div class="mb-3">
                         <label class="form-label">Provider</label>
                         <select class="form-select" name="provider">
-                            <option value="mnotify" selected>mNotify</option>
-                            <option value="hubtel">Hubtel</option>
+                            <option value="mnotify">mNotify</option>
+                            <option value="hubtel" selected>Hubtel</option>
                         </select>
                     </div>
 
