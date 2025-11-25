@@ -46,6 +46,25 @@ if (isset($_GET['delete']) && hasRole('Admin')) {
 
 $allDues = $dues->getAll();
 
+// Get member payment status if logged in as member
+$memberPayments = [];
+if (hasRole('Member') && isset($_SESSION['member_id'])) {
+    $memberId = $_SESSION['member_id'];
+    $paymentQuery = "SELECT dues_id, status, amount, payment_date 
+                     FROM payments 
+                     WHERE member_id = :member_id 
+                     AND status = 'completed'";
+    $paymentStmt = $db->prepare($paymentQuery);
+    $paymentStmt->bindParam(':member_id', $memberId, PDO::PARAM_INT);
+    $paymentStmt->execute();
+    $payments = $paymentStmt->fetchAll(PDO::FETCH_ASSOC);
+    
+    // Index by dues_id for easy lookup
+    foreach ($payments as $payment) {
+        $memberPayments[$payment['dues_id']] = $payment;
+    }
+}
+
 include 'includes/header.php';
 ?>
 
@@ -77,13 +96,16 @@ include 'includes/header.php';
                         <th>Description</th>
                         <th>Due Date</th>
                         <th>Status</th>
+                        <?php if (hasRole('Member')): ?>
+                        <th>Payment Status</th>
+                        <?php endif; ?>
                         <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     <?php if (empty($allDues)): ?>
                         <tr>
-                            <td colspan="6" class="text-center text-muted">No dues found</td>
+                            <td colspan="<?php echo hasRole('Member') ? '7' : '6'; ?>" class="text-center text-muted">No dues found</td>
                         </tr>
                     <?php else: ?>
                         <?php foreach ($allDues as $d): ?>
@@ -91,6 +113,10 @@ include 'includes/header.php';
                             $isPast = strtotime($d['due_date']) < time();
                             $statusClass = $isPast ? 'danger' : 'success';
                             $statusText = $isPast ? 'Overdue' : 'Active';
+                            
+                            // Check if member has paid this dues
+                            $isPaid = isset($memberPayments[$d['id']]);
+                            $paymentInfo = $isPaid ? $memberPayments[$d['id']] : null;
                             ?>
                             <tr>
                                 <td><strong class="fs-5"><?php echo $d['year']; ?></strong></td>
@@ -102,7 +128,31 @@ include 'includes/header.php';
                                         <?php echo $statusText; ?>
                                     </span>
                                 </td>
+                                <?php if (hasRole('Member')): ?>
+                                <td>
+                                    <?php if ($isPaid): ?>
+                                        <span class="badge bg-success" title="Paid on <?php echo formatDate($paymentInfo['payment_date'], 'd M Y'); ?>">
+                                            <i class="cil-check-circle"></i> Paid
+                                        </span>
+                                    <?php else: ?>
+                                        <span class="badge bg-warning">
+                                            <i class="cil-x-circle"></i> Not Paid
+                                        </span>
+                                    <?php endif; ?>
+                                </td>
+                                <?php endif; ?>
                                 <td class="table-actions">
+                                    <?php if (hasRole('Member')): ?>
+                                        <?php if (!$isPaid): ?>
+                                            <a href="pay_dues.php?dues_id=<?php echo $d['id']; ?>" class="btn btn-sm btn-primary" title="Pay Now">
+                                                <i class="cil-credit-card"></i> Pay Now
+                                            </a>
+                                        <?php else: ?>
+                                            <span class="text-success small">
+                                                <i class="cil-check"></i> Paid on <?php echo formatDate($paymentInfo['payment_date'], 'd M Y'); ?>
+                                            </span>
+                                        <?php endif; ?>
+                                    <?php endif; ?>
                                     <?php if (hasAnyRole(['Admin', 'Executive'])): ?>
                                         <a href="dues_edit.php?id=<?php echo $d['id']; ?>" class="btn btn-sm btn-warning" title="Edit">
                                             <i class="cil-pencil"></i>

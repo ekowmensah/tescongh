@@ -29,6 +29,9 @@ if (!$memberData) {
 // Get current academic year
 $currentYear = date('Y');
 
+// Check if specific dues_id is provided in URL
+$preselectedDuesId = isset($_GET['dues_id']) ? (int)$_GET['dues_id'] : null;
+
 // Get all available dues from dues table (not yet paid by this member)
 $availableDuesQuery = "SELECT d.* 
                        FROM dues d
@@ -252,7 +255,8 @@ include 'includes/header.php';
                                     <?php foreach ($availableDues as $due): ?>
                                         <option value="<?php echo $due['id']; ?>" 
                                                 data-amount="<?php echo $due['amount']; ?>" 
-                                                data-year="<?php echo $due['year']; ?>">
+                                                data-year="<?php echo $due['year']; ?>"
+                                                <?php echo ($preselectedDuesId && $preselectedDuesId == $due['id']) ? 'selected' : ''; ?>>
                                             <?php echo $due['year']; ?> Academic Year - GH₵<?php echo number_format($due['amount'], 2); ?>
                                             <?php if (isset($due['status']) && $due['status'] == 'Pending'): ?>
                                                 <span class="text-muted">(Pending)</span>
@@ -364,13 +368,19 @@ document.getElementById('dues_select')?.addEventListener('change', function() {
     }
 });
 
-// Trigger on page load if there's only one due
+// Trigger on page load if there's only one due OR if a due is preselected
 window.addEventListener('DOMContentLoaded', function() {
     const duesSelect = document.getElementById('dues_select');
-    if (duesSelect && duesSelect.options.length === 2) {
-        // Only one due available (plus the default option)
-        duesSelect.selectedIndex = 1;
-        duesSelect.dispatchEvent(new Event('change'));
+    if (duesSelect) {
+        // Check if a due is already selected (preselected from URL)
+        if (duesSelect.value) {
+            duesSelect.dispatchEvent(new Event('change'));
+        }
+        // Or if there's only one due available (plus the default option)
+        else if (duesSelect.options.length === 2) {
+            duesSelect.selectedIndex = 1;
+            duesSelect.dispatchEvent(new Event('change'));
+        }
     }
 });
 </script>
