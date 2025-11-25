@@ -82,18 +82,20 @@ try {
     // Get payment statistics from payments table
     $checkTable = $db->query("SHOW TABLES LIKE 'payments'")->fetch();
     if ($checkTable) {
-        $duesStmt = $db->prepare("SELECT COUNT(*) as count, SUM(p.amount) as total 
+        $duesStmt = $db->prepare("SELECT COUNT(*) as count, COALESCE(SUM(p.amount), 0) as total 
                                    FROM payments p
                                    WHERE p.member_id = :id 
-                                   AND p.status = 'completed')");
-        $duesStmt->bindParam(':id', $memberId);
+                                   AND p.status = 'completed'");
+        $duesStmt->bindParam(':id', $memberId, PDO::PARAM_INT);
         $duesStmt->execute();
-        $duesData = $duesStmt->fetch();
-        $stats['dues_paid'] = $duesData['count'] ?? 0;
-        $stats['total_paid'] = $duesData['total'] ?? 0;
+        $duesData = $duesStmt->fetch(PDO::FETCH_ASSOC);
+        $stats['dues_paid'] = (int)($duesData['count'] ?? 0);
+        $stats['total_paid'] = (float)($duesData['total'] ?? 0);
     }
 } catch (PDOException $e) {
-    // Table doesn't exist, keep default values
+    // Log error for debugging
+    error_log("Member view payment stats error: " . $e->getMessage());
+    // Keep default values
 }
 
 // Get executive position if applicable
