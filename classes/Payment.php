@@ -129,8 +129,21 @@ class Payment {
 
     /**
      * Delete payment
+     * Note: Completed payments cannot be deleted to preserve financial records
      */
     public function delete($id) {
+        // First check if payment is completed
+        $checkQuery = "SELECT status FROM " . $this->table . " WHERE id = :id";
+        $checkStmt = $this->conn->prepare($checkQuery);
+        $checkStmt->bindParam(':id', $id);
+        $checkStmt->execute();
+        $payment = $checkStmt->fetch();
+        
+        // Prevent deletion of completed payments
+        if ($payment && $payment['status'] === 'completed') {
+            throw new Exception('Completed payments cannot be deleted. Payment records must be preserved for accounting purposes.');
+        }
+        
         $query = "DELETE FROM " . $this->table . " WHERE id = :id";
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(':id', $id);

@@ -500,8 +500,8 @@ include 'includes/header.php';
                                     <tr>
                                         <td>
                                             <div>
-                                                <strong><?php echo htmlspecialchars($payment['fullname']); ?></strong>
-                                                <br><small class="text-muted"><?php echo htmlspecialchars($payment['student_id']); ?></small>
+                                                <strong><?php echo htmlspecialchars($payment['fullname'] ?? 'Deleted Member'); ?></strong>
+                                                <br><small class="text-muted"><?php echo htmlspecialchars($payment['student_id'] ?? 'N/A'); ?></small>
                                             </div>
                                         </td>
                                         <td>

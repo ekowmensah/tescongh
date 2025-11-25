@@ -190,22 +190,22 @@ $isHubtelPayment = in_array($paymentData['payment_method'], ['hubtel_mobile', 'h
                 <div class="row">
                     <div class="col-md-6 mb-3">
                         <label class="text-muted small">Full Name</label>
-                        <div><strong><?php echo htmlspecialchars($paymentData['fullname']); ?></strong></div>
+                        <div><strong><?php echo htmlspecialchars($paymentData['fullname'] ?? 'Deleted Member'); ?></strong></div>
                     </div>
                     <div class="col-md-6 mb-3">
                         <label class="text-muted small">Phone Number</label>
-                        <div><strong><?php echo htmlspecialchars($paymentData['phone']); ?></strong></div>
+                        <div><strong><?php echo htmlspecialchars($paymentData['phone'] ?? 'N/A'); ?></strong></div>
                     </div>
                     <div class="col-md-6 mb-3">
                         <label class="text-muted small">Email</label>
-                        <div><strong><?php echo htmlspecialchars($paymentData['email']); ?></strong></div>
+                        <div><strong><?php echo htmlspecialchars($paymentData['email'] ?? 'N/A'); ?></strong></div>
                     </div>
                     <div class="col-md-6 mb-3">
                         <label class="text-muted small">Member ID</label>
-                        <div><strong>#<?php echo $paymentData['member_id']; ?></strong></div>
+                        <div><strong><?php echo $paymentData['member_id'] ? '#' . $paymentData['member_id'] : 'N/A (Member Deleted)'; ?></strong></div>
                     </div>
                 </div>
-                <?php if (hasAnyRole(['Admin', 'Executive'])): ?>
+                <?php if (hasAnyRole(['Admin', 'Executive']) && $paymentData['member_id']): ?>
                 <div class="mt-2">
                     <a href="member_view.php?id=<?php echo $paymentData['member_id']; ?>" class="btn btn-sm btn-outline-primary">
                         <i class="cil-user"></i> View Member Profile

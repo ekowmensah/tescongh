@@ -52,10 +52,9 @@ try {
     // Note: Patrons are stored in members table with position='Patron', not in a separate table
     // No need to delete from campus_patrons as that table doesn't exist
     
-    // Delete payment records
-    $stmt = $db->prepare("DELETE FROM payments WHERE member_id = :member_id");
-    $stmt->bindParam(':member_id', $memberId);
-    $stmt->execute();
+    // Payment records are automatically preserved by the database foreign key constraint
+    // The foreign key is set to ON DELETE SET NULL, so member_id will be set to NULL automatically
+    // This maintains payment records for accounting purposes while removing the member reference
     
     // Delete the member
     if ($member->delete($memberId)) {
@@ -69,7 +68,7 @@ try {
         // Commit transaction
         $db->commit();
         
-        setFlashMessage('success', 'Member deleted successfully');
+        setFlashMessage('success', 'Member deleted successfully. Payment records have been preserved for accounting purposes.');
         redirect('members.php');
     } else {
         // Rollback on failure

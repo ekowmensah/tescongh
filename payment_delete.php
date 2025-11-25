@@ -35,6 +35,12 @@ if (!$isAdmin && !$isRegularMember) {
     redirect('payments.php');
 }
 
+// Check if payment is completed - NO ONE can delete completed payments
+if ($paymentData['status'] === 'completed') {
+    setFlashMessage('danger', 'Completed payments cannot be deleted. Payment records must be preserved for accounting purposes.');
+    redirect('payments.php');
+}
+
 // If regular member, check ownership and status
 if ($isRegularMember) {
     // Get member ID for current user

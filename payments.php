@@ -182,8 +182,8 @@ include 'includes/header.php';
                             <tr>
                                 <td><?php echo $p['id']; ?></td>
                                 <td>
-                                    <strong><?php echo htmlspecialchars($p['fullname']); ?></strong><br>
-                                    <small class="text-muted"><?php echo htmlspecialchars($p['phone']); ?></small>
+                                    <strong><?php echo htmlspecialchars($p['fullname'] ?? 'Deleted Member'); ?></strong><br>
+                                    <small class="text-muted"><?php echo htmlspecialchars($p['phone'] ?? 'N/A'); ?></small>
                                 </td>
                                 <td><span class="badge bg-info"><?php echo $p['year']; ?></span></td>
                                 <td><strong><?php echo formatCurrency($p['amount']); ?></strong></td>
