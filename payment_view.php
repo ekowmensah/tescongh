@@ -56,6 +56,57 @@ include 'includes/header.php';
     </div>
 </div>
 
+<?php 
+$isPendingOrFailed = in_array(strtolower($paymentData['status']), ['pending', 'failed']);
+$isHubtelPayment = in_array($paymentData['payment_method'], ['hubtel_mobile', 'hubtel_card']);
+?>
+
+<?php if ($isPendingOrFailed): ?>
+<div class="alert alert-<?php echo strtolower($paymentData['status']) == 'pending' ? 'warning' : 'danger'; ?> mb-4">
+    <div class="d-flex align-items-center">
+        <div class="flex-grow-1">
+            <h5 class="alert-heading mb-2">
+                <i class="cil-<?php echo strtolower($paymentData['status']) == 'pending' ? 'clock' : 'x-circle'; ?>"></i>
+                Payment <?php echo ucfirst($paymentData['status']); ?>
+            </h5>
+            <p class="mb-0">
+                <?php if (strtolower($paymentData['status']) == 'pending'): ?>
+                    This payment is awaiting confirmation. 
+                    <?php if ($isHubtelPayment): ?>
+                        You can retry the payment or delete this record if it was created by mistake.
+                    <?php else: ?>
+                        You can delete this record if it was created by mistake.
+                    <?php endif; ?>
+                <?php else: ?>
+                    This payment has failed. 
+                    <?php if ($isHubtelPayment): ?>
+                        You can retry the payment or delete this record.
+                    <?php else: ?>
+                        Please contact support or delete this record.
+                    <?php endif; ?>
+                <?php endif; ?>
+            </p>
+        </div>
+        <div class="ms-3">
+            <?php if ($isHubtelPayment): ?>
+                <a href="retry_payment.php?id=<?php echo $paymentId; ?>" 
+                   class="btn btn-warning me-2"
+                   onclick="return confirm('Retry this payment? You will be redirected to Hubtel checkout.')">
+                    <i class="cil-reload"></i> Retry
+                </a>
+            <?php endif; ?>
+            <?php if ($isRegularMember || hasRole('Admin')): ?>
+                <a href="payment_delete.php?id=<?php echo $paymentId; ?>" 
+                   class="btn btn-danger"
+                   onclick="return confirm('Delete this payment record? This action cannot be undone.')">
+                    <i class="cil-trash"></i> Delete
+                </a>
+            <?php endif; ?>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
+
 <div class="row">
     <div class="col-md-8">
         <!-- Payment Information -->
@@ -188,32 +239,59 @@ include 'includes/header.php';
 
     <div class="col-md-4">
         <!-- Actions -->
-        <?php if (hasAnyRole(['Admin', 'Executive'])): ?>
         <div class="card mb-3">
             <div class="card-header">
                 <strong>Actions</strong>
             </div>
             <div class="card-body">
                 <div class="d-grid gap-2">
-                    <?php if ($paymentData['status'] == 'Pending' || $paymentData['status'] == 'pending'): ?>
-                    <button class="btn btn-success" onclick="updatePaymentStatus(<?php echo $paymentId; ?>, 'completed')">
-                        <i class="cil-check"></i> Mark as Paid
-                    </button>
-                    <button class="btn btn-danger" onclick="updatePaymentStatus(<?php echo $paymentId; ?>, 'failed')">
-                        <i class="cil-x"></i> Mark as Failed
-                    </button>
+                    <?php 
+                    $isPendingOrFailed = in_array(strtolower($paymentData['status']), ['pending', 'failed']);
+                    $isHubtelPayment = in_array($paymentData['payment_method'], ['hubtel_mobile', 'hubtel_card']);
+                    ?>
+                    
+                    <?php if ($isPendingOrFailed && $isHubtelPayment): ?>
+                        <!-- Retry Payment Button -->
+                        <a href="retry_payment.php?id=<?php echo $paymentId; ?>" 
+                           class="btn btn-warning"
+                           onclick="return confirm('Retry this payment? You will be redirected to Hubtel checkout.')">
+                            <i class="cil-reload"></i> Retry Payment
+                        </a>
                     <?php endif; ?>
-                    <?php if (hasRole('Admin')): ?>
-                    <a href="payment_delete.php?id=<?php echo $paymentId; ?>" 
-                       class="btn btn-outline-danger"
-                       onclick="return confirm('Are you sure you want to delete this payment record?')">
-                        <i class="cil-trash"></i> Delete Payment
-                    </a>
+                    
+                    <?php if ($isPendingOrFailed): ?>
+                        <?php if ($isRegularMember): ?>
+                            <!-- Member can delete their own pending/failed payments -->
+                            <a href="payment_delete.php?id=<?php echo $paymentId; ?>" 
+                               class="btn btn-danger"
+                               onclick="return confirm('Delete this payment record? This action cannot be undone.')">
+                                <i class="cil-trash"></i> Delete Payment
+                            </a>
+                        <?php endif; ?>
+                    <?php endif; ?>
+                    
+                    <?php if (hasAnyRole(['Admin', 'Executive'])): ?>
+                        <!-- Admin/Executive Actions -->
+                        <?php if ($paymentData['status'] == 'Pending' || $paymentData['status'] == 'pending'): ?>
+                        <button class="btn btn-success" onclick="updatePaymentStatus(<?php echo $paymentId; ?>, 'completed')">
+                            <i class="cil-check"></i> Mark as Paid
+                        </button>
+                        <button class="btn btn-outline-danger" onclick="updatePaymentStatus(<?php echo $paymentId; ?>, 'failed')">
+                            <i class="cil-x"></i> Mark as Failed
+                        </button>
+                        <?php endif; ?>
+                        
+                        <?php if (hasRole('Admin')): ?>
+                        <a href="payment_delete.php?id=<?php echo $paymentId; ?>" 
+                           class="btn btn-outline-danger"
+                           onclick="return confirm('Are you sure you want to delete this payment record?')">
+                            <i class="cil-trash"></i> Delete Payment
+                        </a>
+                        <?php endif; ?>
                     <?php endif; ?>
                 </div>
             </div>
         </div>
-        <?php endif; ?>
 
         <!-- Payment Timeline -->
         <div class="card">

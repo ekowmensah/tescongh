@@ -137,7 +137,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     
                     $description = "UEW-TESCON Membership Dues {$dueToPayFor['year']} - {$memberData['fullname']}";
                     $callbackUrl = APP_URL . '/payment_callback.php';
-                    $returnUrl = APP_URL . '/payment_success.php?ref=' . $transactionId;
+                    $returnUrl = APP_URL . '/payments.php?payment_success=1&ref=' . $transactionId;
                     $cancellationUrl = APP_URL . '/pay_dues.php?cancelled=1';
                     
                     $result = $hubtel->initiateCheckout(

@@ -49,6 +49,33 @@ $pagination = paginate($totalPayments, $page, $recordsPerPage);
 // Get statistics (filtered for regular members)
 $stats = $payment->getStatistics($isRegularMember ? ($currentMember['id'] ?? null) : null);
 
+// Check for payment success from Hubtel redirect
+if (isset($_GET['payment_success']) && isset($_GET['ref'])) {
+    $transactionRef = sanitize($_GET['ref']);
+    
+    // Check payment status
+    $checkQuery = "SELECT status FROM payments WHERE transaction_id = :transaction_id LIMIT 1";
+    $checkStmt = $db->prepare($checkQuery);
+    $checkStmt->bindParam(':transaction_id', $transactionRef);
+    $checkStmt->execute();
+    $paymentStatus = $checkStmt->fetch();
+    
+    if ($paymentStatus) {
+        if ($paymentStatus['status'] === 'completed') {
+            setFlashMessage('success', 'Payment completed successfully! A confirmation SMS has been sent to your phone.');
+        } elseif ($paymentStatus['status'] === 'pending') {
+            setFlashMessage('info', 'Payment is being processed. You will receive an SMS confirmation shortly.');
+        } else {
+            setFlashMessage('warning', 'Payment status: ' . ucfirst($paymentStatus['status']));
+        }
+    }
+}
+
+// Check for cancelled payment
+if (isset($_GET['cancelled'])) {
+    setFlashMessage('warning', 'Payment was cancelled. You can retry the payment anytime using the "Retry" button.');
+}
+
 include 'includes/header.php';
 ?>
 
@@ -191,6 +218,28 @@ include 'includes/header.php';
                                     <a href="payment_view.php?id=<?php echo $p['id']; ?>" class="btn btn-sm btn-info" title="View">
                                         <i class="cil-eye"></i>
                                     </a>
+                                    
+                                    <?php if (in_array($p['status'], ['pending', 'failed']) && in_array($p['payment_method'], ['hubtel_mobile', 'hubtel_card'])): ?>
+                                        <a href="retry_payment.php?id=<?php echo $p['id']; ?>" 
+                                           class="btn btn-sm btn-warning" 
+                                           title="Retry Payment"
+                                           onclick="return confirm('Retry this payment? You will be redirected to Hubtel checkout.')">
+                                            <i class="cil-reload"></i> Retry
+                                        </a>
+                                    <?php endif; ?>
+                                    
+                                    <?php if (in_array($p['status'], ['pending', 'failed'])): ?>
+                                        <?php if ($isRegularMember): ?>
+                                            <!-- Members can delete their own pending/failed payments -->
+                                            <a href="payment_delete.php?id=<?php echo $p['id']; ?>" 
+                                               class="btn btn-sm btn-danger" 
+                                               title="Delete"
+                                               onclick="return confirm('Delete this payment record? This action cannot be undone.')">
+                                                <i class="cil-trash"></i>
+                                            </a>
+                                        <?php endif; ?>
+                                    <?php endif; ?>
+                                    
                                     <?php if (hasRole('Admin')): ?>
                                         <a href="payment_delete.php?id=<?php echo $p['id']; ?>" 
                                            class="btn btn-sm btn-danger" 

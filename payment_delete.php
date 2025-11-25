@@ -5,12 +5,6 @@ require_once 'includes/functions.php';
 require_once 'includes/auth.php';
 require_once 'classes/Payment.php';
 
-// Only admins can delete payments
-if (!hasRole('Admin')) {
-    setFlashMessage('danger', 'You do not have permission to perform this action');
-    redirect('payments.php');
-}
-
 $database = new Database();
 $db = $database->getConnection();
 
@@ -30,6 +24,43 @@ $paymentData = $payment->getById($paymentId);
 if (!$paymentData) {
     setFlashMessage('danger', 'Payment not found');
     redirect('payments.php');
+}
+
+// Check permissions
+$isAdmin = hasRole('Admin');
+$isRegularMember = hasRole('Member') && !hasAnyRole(['Admin', 'Executive', 'Patron']);
+
+if (!$isAdmin && !$isRegularMember) {
+    setFlashMessage('danger', 'You do not have permission to perform this action');
+    redirect('payments.php');
+}
+
+// If regular member, check ownership and status
+if ($isRegularMember) {
+    // Get member ID for current user
+    $currentUserId = $_SESSION['user_id'];
+    $memberQuery = "SELECT id FROM members WHERE user_id = :user_id";
+    $stmt = $db->prepare($memberQuery);
+    $stmt->bindParam(':user_id', $currentUserId);
+    $stmt->execute();
+    $currentMember = $stmt->fetch();
+    
+    if (!$currentMember) {
+        setFlashMessage('danger', 'Member profile not found');
+        redirect('payments.php');
+    }
+    
+    // Check if payment belongs to this member
+    if ($paymentData['member_id'] != $currentMember['id']) {
+        setFlashMessage('danger', 'You can only delete your own payments');
+        redirect('payments.php');
+    }
+    
+    // Check if payment is pending or failed
+    if (!in_array($paymentData['status'], ['pending', 'failed'])) {
+        setFlashMessage('danger', 'You can only delete pending or failed payments');
+        redirect('payments.php');
+    }
 }
 
 try {

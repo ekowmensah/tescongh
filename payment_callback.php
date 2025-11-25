@@ -9,6 +9,7 @@
 require_once 'config/config.php';
 require_once 'config/Database.php';
 require_once 'classes/HubtelCheckout.php';
+require_once 'classes/HubtelSMS.php';
 
 // Log all incoming requests for debugging
 $logFile = __DIR__ . '/logs/payment_callback.log';
@@ -49,8 +50,13 @@ if (!$db) {
 }
 
 try {
-    // Find payment by client reference (transaction ID)
-    $query = "SELECT * FROM payments WHERE transaction_id = :transaction_id LIMIT 1";
+    // Find payment with member and dues info
+    $query = "SELECT p.*, m.fullname, m.phone, m.student_id, d.year, d.amount as due_amount
+              FROM payments p
+              JOIN members m ON p.member_id = m.id
+              LEFT JOIN dues d ON p.dues_id = d.id
+              WHERE p.transaction_id = :transaction_id 
+              LIMIT 1";
     $stmt = $db->prepare($query);
     $stmt->bindParam(':transaction_id', $callbackData['clientReference']);
     $stmt->execute();
@@ -94,6 +100,40 @@ try {
     
     // Log success
     file_put_contents($logFile, "SUCCESS: Payment {$payment['id']} updated to status: {$status}\n", FILE_APPEND);
+    
+    // Send SMS if payment is successful
+    if ($status === 'completed' && !empty($payment['phone'])) {
+        try {
+            $sms = new HubtelSMS(HUBTEL_SMS_CLIENT_ID, HUBTEL_SMS_CLIENT_SECRET, SMS_SENDER_ID);
+            
+            // Build SMS message
+            $year = $payment['year'] ? $payment['year'] : 'N/A';
+            $amount = number_format($payment['amount'], 2);
+            $message = "UEW-TESCON: Payment successful! You have paid GH₵{$amount} for {$year} dues. Transaction ID: {$payment['transaction_id']}. Thank you!";
+            
+            // Send SMS
+            $smsResult = $sms->sendSimplePOST($payment['phone'], $message);
+            
+            // Log SMS
+            if ($smsResult['success']) {
+                $message_id = isset($smsResult['data']['messageId']) ? $smsResult['data']['messageId'] : null;
+                $logQuery = "INSERT INTO sms_logs (sender_id, recipient_phone, message, message_id, status) 
+                            VALUES (:sender_id, :phone, :message, :message_id, 'sent')";
+                $logStmt = $db->prepare($logQuery);
+                $logStmt->bindParam(':sender_id', $payment['member_id']);
+                $logStmt->bindParam(':phone', $payment['phone']);
+                $logStmt->bindParam(':message', $message);
+                $logStmt->bindParam(':message_id', $message_id);
+                $logStmt->execute();
+                
+                file_put_contents($logFile, "SMS sent to {$payment['phone']} for payment {$payment['id']}\n", FILE_APPEND);
+            } else {
+                file_put_contents($logFile, "SMS failed for payment {$payment['id']}: " . ($smsResult['error'] ?? 'Unknown error') . "\n", FILE_APPEND);
+            }
+        } catch (Exception $smsError) {
+            file_put_contents($logFile, "SMS exception for payment {$payment['id']}: " . $smsError->getMessage() . "\n", FILE_APPEND);
+        }
+    }
     
     // Send success response
     http_response_code(200);
