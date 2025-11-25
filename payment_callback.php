@@ -109,7 +109,9 @@ try {
             // Build SMS message
             $year = $payment['year'] ? $payment['year'] : 'N/A';
             $amount = number_format($payment['amount'], 2);
-            $message = "UEW-TESCON: Payment successful! You have paid GH₵{$amount} for {$year} dues. Transaction ID: {$payment['transaction_id']}. Thank you!";
+            // Extract first name from fullname
+            $firstName = explode(' ', $payment['fullname'])[0];
+            $message = "Hi {$firstName}, You have paid GH₵{$amount} as {$year} dues. Thank You!";
             
             // Send SMS
             $smsResult = $sms->sendSimplePOST($payment['phone'], $message);
