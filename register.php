@@ -140,11 +140,19 @@ include 'includes/header.php';
 <div class="row mb-4">
     <div class="col-md-6">
         <h2>Members Register</h2>
-        <p class="text-muted">Total Members: <strong><?php echo number_format($total_records); ?></strong></p>
+        <p class="text-muted">
+            Showing: <strong><?php echo number_format(count($members)); ?></strong> of 
+            <strong><?php echo number_format($total_records); ?></strong> members
+        </p>
     </div>
     <div class="col-md-6 text-end">
+        <?php if ($search || $region_filter || $constituency_filter || $campus_filter || $institution_filter || $gender_filter || $status_filter || $position_filter): ?>
+            <a href="register.php" class="btn btn-success">
+                <i class="cil-list"></i> View All
+            </a>
+        <?php endif; ?>
         <button type="button" class="btn btn-secondary" onclick="window.print();">
-            <i class="cil-print"></i> Print Register
+            <i class="cil-print"></i> Print
         </button>
         <button type="button" class="btn btn-info" data-coreui-toggle="collapse" data-coreui-target="#filterPanel">
             <i class="cil-filter"></i> Filters
