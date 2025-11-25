@@ -12,6 +12,12 @@ if (isLoggedIn()) {
 $error = '';
 $success = '';
 
+// Check for signup success message
+if (isset($_SESSION['signup_success'])) {
+    $success = $_SESSION['signup_success'];
+    unset($_SESSION['signup_success']);
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $identifier = sanitize($_POST['identifier']); // Can be email or student ID
     $password = $_POST['password'];

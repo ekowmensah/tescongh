@@ -70,15 +70,41 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $db = $database->getConnection();
         
         if ($db) {
-            // Check if student ID already exists
-            $check_query = "SELECT id FROM members WHERE student_id = :student_id";
-            $check_stmt = $db->prepare($check_query);
-            $check_stmt->bindParam(':student_id', $student_id);
-            $check_stmt->execute();
+            // Check for duplicate student ID
+            $check_student_query = "SELECT id FROM members WHERE student_id = :student_id";
+            $check_student_stmt = $db->prepare($check_student_query);
+            $check_student_stmt->bindParam(':student_id', $student_id);
+            $check_student_stmt->execute();
             
-            if ($check_stmt->rowCount() > 0) {
-                $error = 'Student ID already registered. Please login instead.';
-            } else {
+            if ($check_student_stmt->rowCount() > 0) {
+                $error = 'Student ID already registered. Please login instead or contact support if this is an error.';
+            }
+            
+            // Check for duplicate email
+            if (empty($error)) {
+                $check_email_query = "SELECT id FROM users WHERE email = :email";
+                $check_email_stmt = $db->prepare($check_email_query);
+                $check_email_stmt->bindParam(':email', $email);
+                $check_email_stmt->execute();
+                
+                if ($check_email_stmt->rowCount() > 0) {
+                    $error = 'Email address already registered. Please use a different Student ID or login instead.';
+                }
+            }
+            
+            // Check for duplicate phone number
+            if (empty($error)) {
+                $check_phone_query = "SELECT id FROM members WHERE phone = :phone";
+                $check_phone_stmt = $db->prepare($check_phone_query);
+                $check_phone_stmt->bindParam(':phone', $phone);
+                $check_phone_stmt->execute();
+                
+                if ($check_phone_stmt->rowCount() > 0) {
+                    $error = 'Phone number already registered. Please use a different phone number or login instead.';
+                }
+            }
+            
+            if (empty($error)) {
                 try {
                     $db->beginTransaction();
                     
@@ -115,16 +141,58 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $member_stmt->bindParam(':campus_id', $campus_id);
                     $member_stmt->execute();
                     
+                    $member_id = $db->lastInsertId();
+                    
+                    // Generate verification token
+                    $token = bin2hex(random_bytes(32));
+                    $expires_at = date('Y-m-d H:i:s', strtotime('+24 hours'));
+                    
+                    // Insert verification token
+                    $token_query = "INSERT INTO verification_tokens (member_id, token, student_id, phone, type, expires_at) 
+                                   VALUES (:member_id, :token, :student_id, :phone, 'signup', :expires_at)";
+                    $token_stmt = $db->prepare($token_query);
+                    $token_stmt->bindParam(':member_id', $member_id);
+                    $token_stmt->bindParam(':token', $token);
+                    $token_stmt->bindParam(':student_id', $student_id);
+                    $token_stmt->bindParam(':phone', $phone);
+                    $token_stmt->bindParam(':expires_at', $expires_at);
+                    $token_stmt->execute();
+                    
                     $db->commit();
                     
-                    // Auto-login the user after successful registration
-                    $_SESSION['user_id'] = $user_id;
-                    $_SESSION['email'] = $email;
-                    $_SESSION['role'] = 'Member';
-                    $_SESSION['last_activity'] = time();
+                    // Send SMS with verification link
+                    try {
+                        require_once 'classes/HubtelSMS.php';
+                        
+                        $sms = new HubtelSMS(HUBTEL_CLIENT_ID, HUBTEL_CLIENT_SECRET, SMS_SENDER_ID);
+                        $verification_url = APP_URL . '/verify_account.php?token=' . $token;
+                        
+                        // Create SMS message
+                        $message = "Welcome to UEW-TESCON, {$fullname}! Your registration was successful. Please verify your account by clicking: {$verification_url} (Valid for 24 hours)";
+                        
+                        // Send SMS
+                        $smsResult = $sms->sendSimplePOST($phone, $message);
+                        
+                        // Log SMS
+                        if ($smsResult['success']) {
+                            $message_id = isset($smsResult['data']['messageId']) ? $smsResult['data']['messageId'] : null;
+                            $log_query = "INSERT INTO sms_logs (sender_id, recipient_phone, message, message_id, status) 
+                                         VALUES (:sender_id, :phone, :message, :message_id, 'sent')";
+                            $log_stmt = $db->prepare($log_query);
+                            $log_stmt->bindParam(':sender_id', $user_id);
+                            $log_stmt->bindParam(':phone', $phone);
+                            $log_stmt->bindParam(':message', $message);
+                            $log_stmt->bindParam(':message_id', $message_id);
+                            $log_stmt->execute();
+                        }
+                    } catch (Exception $e) {
+                        // SMS failed but registration succeeded - log error
+                        error_log("SMS sending failed for new member {$student_id}: " . $e->getMessage());
+                    }
                     
-                    // Redirect to dashboard
-                    redirect('dashboard.php');
+                    // Set success message and redirect to login
+                    $_SESSION['signup_success'] = "Registration successful! A verification link has been sent to {$phone}. Please verify your account to login.";
+                    redirect('login.php');
                     
                 } catch (Exception $e) {
                     $db->rollBack();
