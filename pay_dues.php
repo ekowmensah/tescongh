@@ -279,10 +279,10 @@ include 'includes/header.php';
                                 <label class="form-label">Payment Method <span class="text-danger">*</span></label>
                                 <select class="form-select" name="payment_method" required>
                                     <option value="">Select Payment Method</option>
-                                    <option value="hubtel_mobile">Mobile Money (Hubtel)</option>
-                                    <option value="hubtel_card">Card Payment (Hubtel)</option>
+                                    <option value="hubtel_mobile" selected>Mobile Money (Hubtel)</option>
+                            <!--        <option value="hubtel_card">Card Payment (Hubtel)</option>
                                     <option value="bank_transfer">Bank Transfer</option>
-                                    <option value="cash">Cash Payment</option>
+                                    <option value="cash">Cash Payment</option> -->
                                 </select>
                             </div>
 
