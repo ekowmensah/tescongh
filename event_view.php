@@ -183,12 +183,24 @@ include 'includes/header.php';
             <div class="card-body">
                 <?php if (isset($_SESSION['member_id']) && !$isPast): ?>
                     <?php if ($isAttending): ?>
-                        <div class="alert alert-success mb-2">
-                            <i class="cil-check-circle"></i> You're attending this event
+                        <div class="alert alert-success mb-3">
+                            <i class="cil-check-circle"></i> <strong>You're attending!</strong>
                         </div>
+                        <a href="event_register.php?id=<?php echo $event['id']; ?>&action=unregister" 
+                           class="btn btn-outline-danger btn-sm w-100 mb-2"
+                           onclick="return confirm('Are you sure you want to unregister from this event?')">
+                            <i class="cil-x"></i> Unregister
+                        </a>
                     <?php else: ?>
-                        <p class="text-muted small mb-2">Register for this event</p>
+                        <a href="event_register.php?id=<?php echo $event['id']; ?>&action=register" 
+                           class="btn btn-primary btn-sm w-100 mb-2">
+                            <i class="cil-check"></i> Register to Attend
+                        </a>
                     <?php endif; ?>
+                <?php elseif (isset($_SESSION['member_id']) && $isPast): ?>
+                    <div class="alert alert-secondary mb-0">
+                        <small>Registration closed - Event has ended</small>
+                    </div>
                 <?php endif; ?>
                 
                 <?php if (hasAnyRole(['Admin', 'Executive'])): ?>
