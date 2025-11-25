@@ -204,6 +204,9 @@ include 'includes/header.php';
                 <?php endif; ?>
                 
                 <?php if (hasAnyRole(['Admin', 'Executive'])): ?>
+                    <a href="event_attendance.php?id=<?php echo $event['id']; ?>" class="btn btn-info btn-sm w-100 mb-2">
+                        <i class="cil-people"></i> View Attendance (<?php echo $attendeesCount; ?>)
+                    </a>
                     <a href="event_edit.php?id=<?php echo $event['id']; ?>" class="btn btn-warning btn-sm w-100 mb-2">
                         <i class="cil-pencil"></i> Edit Event
                     </a>
