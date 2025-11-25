@@ -78,8 +78,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $expireStmt->bindParam(':member_id', $member['member_id']);
         $expireStmt->execute();
         
-        // Generate new verification token
-        $token = bin2hex(random_bytes(32));
+        // Generate new verification token (shorter for SMS)
+        $token = bin2hex(random_bytes(16)); // 32 characters instead of 64
         $expires_at = date('Y-m-d H:i:s', strtotime('+24 hours'));
         
         // Insert new verification token
@@ -97,7 +97,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $sms = new HubtelSMS(HUBTEL_SMS_CLIENT_ID, HUBTEL_SMS_CLIENT_SECRET, SMS_SENDER_ID);
         $verification_url = APP_URL . '/verify_account.php?token=' . $token;
         
-        $message = "UEW-TESCON: Your new verification link: {$verification_url} (Valid for 24 hours)";
+        // Extract first name
+        $firstName = explode(' ', $member['fullname'])[0];
+        $message = "Hi {$firstName}, Your UEW-TESCON verification link: {$verification_url}";
         
         $smsResult = $sms->sendSimplePOST($member['phone'], $message);
         

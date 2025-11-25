@@ -143,8 +143,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     
                     $member_id = $db->lastInsertId();
                     
-                    // Generate verification token
-                    $token = bin2hex(random_bytes(32));
+                    // Generate verification token (shorter for SMS)
+                    $token = bin2hex(random_bytes(16)); // 32 characters instead of 64
                     $expires_at = date('Y-m-d H:i:s', strtotime('+24 hours'));
                     
                     // Insert verification token
@@ -167,8 +167,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $sms = new HubtelSMS(HUBTEL_SMS_CLIENT_ID, HUBTEL_SMS_CLIENT_SECRET, SMS_SENDER_ID);
                         $verification_url = APP_URL . '/verify_account.php?token=' . $token;
                         
-                        // Create SMS message
-                        $message = "Welcome to UEW-TESCON, {$fullname}! Your registration was successful. Please verify your account by clicking: {$verification_url} (Valid for 24 hours)";
+                        // Create SMS message - Extract first name
+                        $firstName = explode(' ', $fullname)[0];
+                        $message = "Hi {$firstName}, Welcome! Verify your account: {$verification_url}";
                         
                         // Send SMS
                         $smsResult = $sms->sendSimplePOST($phone, $message);
