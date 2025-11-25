@@ -92,9 +92,9 @@ include 'includes/header.php';
                 <i class="cil-dollar"></i> Pay Dues
             </a>
         <?php elseif (hasAnyRole(['Admin', 'Executive'])): ?>
-            <a href="payment_add.php" class="btn btn-primary">
+          <!--  <a href="payment_add.php" class="btn btn-primary">
                 <i class="cil-plus"></i> Record Payment
-            </a>
+            </a> -->
         <?php endif; ?>
     </div>
 </div>
