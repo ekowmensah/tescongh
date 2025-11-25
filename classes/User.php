@@ -35,6 +35,22 @@ class User {
             }
 
             if (password_verify($password, $row['password'])) {
+                // Check if account is verified (for Members only)
+                if ($row['role'] === 'Member') {
+                    $verifyQuery = "SELECT m.id FROM members m
+                                   LEFT JOIN verification_tokens vt ON vt.member_id = m.id AND vt.type = 'signup'
+                                   WHERE m.user_id = :user_id 
+                                   AND (vt.id IS NULL OR vt.is_used = 0)
+                                   LIMIT 1";
+                    $verifyStmt = $this->conn->prepare($verifyQuery);
+                    $verifyStmt->bindParam(':user_id', $row['id']);
+                    $verifyStmt->execute();
+                    
+                    if ($verifyStmt->rowCount() > 0) {
+                        return ['success' => false, 'message' => 'Please verify your account first. Check your phone for the verification link.'];
+                    }
+                }
+                
                 // Update last login
                 $this->updateLastLogin($row['id']);
 
@@ -58,7 +74,7 @@ class User {
      * Login user with student ID
      */
     public function loginWithStudentId($studentId, $password) {
-        $query = "SELECT u.id, u.email, u.password, u.role, u.status 
+        $query = "SELECT u.id, u.email, u.password, u.role, u.status, m.id as member_id
                   FROM " . $this->table . " u
                   INNER JOIN members m ON u.id = m.user_id
                   WHERE m.student_id = :student_id LIMIT 1";
@@ -74,6 +90,22 @@ class User {
             }
 
             if (password_verify($password, $row['password'])) {
+                // Check if account is verified (for Members only)
+                if ($row['role'] === 'Member') {
+                    $verifyQuery = "SELECT id FROM verification_tokens 
+                                   WHERE member_id = :member_id 
+                                   AND type = 'signup' 
+                                   AND is_used = 1
+                                   LIMIT 1";
+                    $verifyStmt = $this->conn->prepare($verifyQuery);
+                    $verifyStmt->bindParam(':member_id', $row['member_id']);
+                    $verifyStmt->execute();
+                    
+                    if ($verifyStmt->rowCount() === 0) {
+                        return ['success' => false, 'message' => 'Please verify your account first. Check your phone for the verification link.'];
+                    }
+                }
+                
                 // Update last login
                 $this->updateLastLogin($row['id']);
 

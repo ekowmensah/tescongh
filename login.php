@@ -363,6 +363,16 @@ if (isset($_GET['timeout'])) {
                                 <div class="alert alert-danger alert-dismissible fade show" role="alert">
                                     <?php echo $error; ?>
                                     <button type="button" class="btn-close" data-coreui-dismiss="alert"></button>
+                                    
+                                    <?php if (strpos($error, 'verify your account') !== false): ?>
+                                        <hr>
+                                        <div class="mt-2">
+                                            <p class="mb-2"><strong>Didn't receive verification SMS?</strong></p>
+                                            <button type="button" class="btn btn-sm btn-outline-primary" id="resendVerificationBtn">
+                                                <i class="cil-envelope-closed"></i> Resend Verification Link
+                                            </button>
+                                        </div>
+                                    <?php endif; ?>
                                 </div>
                             <?php endif; ?>
                             
@@ -430,5 +440,61 @@ if (isset($_GET['timeout'])) {
     </div>
     
     <script src="https://unpkg.com/@coreui/coreui@4.2.0/dist/js/coreui.bundle.min.js"></script>
+    <script>
+        // Handle resend verification button
+        document.addEventListener('DOMContentLoaded', function() {
+            const resendBtn = document.getElementById('resendVerificationBtn');
+            if (resendBtn) {
+                resendBtn.addEventListener('click', function() {
+                    const studentIdInput = document.querySelector('input[name="identifier"]');
+                    const studentId = studentIdInput ? studentIdInput.value : '';
+                    
+                    if (!studentId) {
+                        alert('Please enter your Student ID first');
+                        studentIdInput.focus();
+                        return;
+                    }
+                    
+                    // Disable button and show loading
+                    resendBtn.disabled = true;
+                    resendBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Sending...';
+                    
+                    // Send AJAX request
+                    fetch('resend_verification.php', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                        },
+                        body: 'student_id=' + encodeURIComponent(studentId)
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            // Show success message
+                            const alertDiv = document.createElement('div');
+                            alertDiv.className = 'alert alert-success alert-dismissible fade show mt-3';
+                            alertDiv.innerHTML = `
+                                ${data.message}
+                                <button type="button" class="btn-close" data-coreui-dismiss="alert"></button>
+                            `;
+                            resendBtn.parentElement.parentElement.parentElement.insertAdjacentElement('afterend', alertDiv);
+                            
+                            // Hide resend button
+                            resendBtn.parentElement.style.display = 'none';
+                        } else {
+                            alert(data.message);
+                            resendBtn.disabled = false;
+                            resendBtn.innerHTML = '<i class="cil-envelope-closed"></i> Resend Verification Link';
+                        }
+                    })
+                    .catch(error => {
+                        alert('An error occurred. Please try again.');
+                        resendBtn.disabled = false;
+                        resendBtn.innerHTML = '<i class="cil-envelope-closed"></i> Resend Verification Link';
+                    });
+                });
+            }
+        });
+    </script>
 </body>
 </html>
