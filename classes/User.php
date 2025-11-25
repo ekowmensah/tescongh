@@ -22,7 +22,10 @@ class User {
      * Login user with email
      */
     public function login($email, $password) {
-        $query = "SELECT id, email, password, role, status FROM " . $this->table . " WHERE email = :email LIMIT 1";
+        $query = "SELECT u.id, u.email, u.password, u.role, u.status, m.id as member_id 
+                  FROM " . $this->table . " u
+                  LEFT JOIN members m ON u.id = m.user_id
+                  WHERE u.email = :email LIMIT 1";
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(':email', $email);
         $stmt->execute();
@@ -63,7 +66,8 @@ class User {
                     'user' => [
                         'id' => $row['id'],
                         'email' => $row['email'],
-                        'role' => $row['role']
+                        'role' => $row['role'],
+                        'member_id' => $row['member_id'] ?? null
                     ]
                 ];
             } else {
@@ -129,7 +133,8 @@ class User {
                     'user' => [
                         'id' => $row['id'],
                         'email' => $row['email'],
-                        'role' => $row['role']
+                        'role' => $row['role'],
+                        'member_id' => $row['member_id']
                     ]
                 ];
             } else {

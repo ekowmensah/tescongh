@@ -46,6 +46,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $_SESSION['role'] = $result['user']['role'];
                 $_SESSION['last_activity'] = time();
                 
+                // Store member_id if user is a member
+                if (isset($result['user']['member_id']) && $result['user']['member_id']) {
+                    $_SESSION['member_id'] = $result['user']['member_id'];
+                }
+                
                 redirect('dashboard.php');
             } else {
                 $error = $result['message'];
