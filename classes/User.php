@@ -35,15 +35,19 @@ class User {
             }
 
             if (password_verify($password, $row['password'])) {
-                // Check if account is verified (for Members only)
+                // Check if account is verified (for Members only, registered after cutoff date)
                 if ($row['role'] === 'Member') {
-                    $verifyQuery = "SELECT m.id FROM members m
+                    // Only check verification for members registered after verification system was implemented
+                    $cutoffDate = defined('VERIFICATION_CUTOFF_DATE') ? VERIFICATION_CUTOFF_DATE : '2024-11-25 00:00:00';
+                    $verifyQuery = "SELECT m.id, m.created_at FROM members m
                                    LEFT JOIN verification_tokens vt ON vt.member_id = m.id AND vt.type = 'signup'
                                    WHERE m.user_id = :user_id 
+                                   AND m.created_at >= :cutoff_date
                                    AND (vt.id IS NULL OR vt.is_used = 0)
                                    LIMIT 1";
                     $verifyStmt = $this->conn->prepare($verifyQuery);
                     $verifyStmt->bindParam(':user_id', $row['id']);
+                    $verifyStmt->bindParam(':cutoff_date', $cutoffDate);
                     $verifyStmt->execute();
                     
                     if ($verifyStmt->rowCount() > 0) {
@@ -90,19 +94,30 @@ class User {
             }
 
             if (password_verify($password, $row['password'])) {
-                // Check if account is verified (for Members only)
+                // Check if account is verified (for Members only, registered after cutoff date)
                 if ($row['role'] === 'Member') {
-                    $verifyQuery = "SELECT id FROM verification_tokens 
-                                   WHERE member_id = :member_id 
-                                   AND type = 'signup' 
-                                   AND is_used = 1
-                                   LIMIT 1";
-                    $verifyStmt = $this->conn->prepare($verifyQuery);
-                    $verifyStmt->bindParam(':member_id', $row['member_id']);
-                    $verifyStmt->execute();
+                    // Only check verification for members registered after verification system was implemented
+                    $cutoffDate = defined('VERIFICATION_CUTOFF_DATE') ? VERIFICATION_CUTOFF_DATE : '2024-11-25 00:00:00';
+                    $checkDateQuery = "SELECT created_at FROM members WHERE id = :member_id";
+                    $checkDateStmt = $this->conn->prepare($checkDateQuery);
+                    $checkDateStmt->bindParam(':member_id', $row['member_id']);
+                    $checkDateStmt->execute();
+                    $memberData = $checkDateStmt->fetch();
                     
-                    if ($verifyStmt->rowCount() === 0) {
-                        return ['success' => false, 'message' => 'Please verify your account first. Check your phone for the verification link.'];
+                    // Only enforce verification for members registered after cutoff date
+                    if ($memberData && $memberData['created_at'] >= $cutoffDate) {
+                        $verifyQuery = "SELECT id FROM verification_tokens 
+                                       WHERE member_id = :member_id 
+                                       AND type = 'signup' 
+                                       AND is_used = 1
+                                       LIMIT 1";
+                        $verifyStmt = $this->conn->prepare($verifyQuery);
+                        $verifyStmt->bindParam(':member_id', $row['member_id']);
+                        $verifyStmt->execute();
+                        
+                        if ($verifyStmt->rowCount() === 0) {
+                            return ['success' => false, 'message' => 'Please verify your account first. Check your phone for the verification link.'];
+                        }
                     }
                 }
                 
