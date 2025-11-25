@@ -36,6 +36,47 @@ if ($canViewStats) {
         // Get recent members
         $recentMembers = $member->getAll(5, 0);
         
+        // Get recent successful payments
+        $recentPayments = [];
+        if (hasRole('Admin')) {
+            // Admin sees all recent payments
+            $paymentsQuery = "SELECT p.*, m.fullname, m.student_id, d.year as dues_year
+                             FROM payments p
+                             INNER JOIN members m ON p.member_id = m.id
+                             LEFT JOIN dues d ON p.dues_id = d.id
+                             WHERE p.status = 'completed'
+                             ORDER BY p.payment_date DESC
+                             LIMIT 10";
+            $paymentsStmt = $db->query($paymentsQuery);
+            $recentPayments = $paymentsStmt->fetchAll();
+        } elseif (hasRole('Executive')) {
+            // Executive sees payments from their campus
+            $execQuery = "SELECT ce.campus_id 
+                         FROM campus_executives ce
+                         INNER JOIN members m ON ce.member_id = m.id
+                         WHERE m.user_id = :user_id
+                         LIMIT 1";
+            $execStmt = $db->prepare($execQuery);
+            $execStmt->bindParam(':user_id', $_SESSION['user_id']);
+            $execStmt->execute();
+            $execData = $execStmt->fetch();
+            
+            if ($execData && $execData['campus_id']) {
+                $paymentsQuery = "SELECT p.*, m.fullname, m.student_id, d.year as dues_year
+                                 FROM payments p
+                                 INNER JOIN members m ON p.member_id = m.id
+                                 LEFT JOIN dues d ON p.dues_id = d.id
+                                 WHERE p.status = 'completed'
+                                 AND m.campus_id = :campus_id
+                                 ORDER BY p.payment_date DESC
+                                 LIMIT 10";
+                $paymentsStmt = $db->prepare($paymentsQuery);
+                $paymentsStmt->bindParam(':campus_id', $execData['campus_id']);
+                $paymentsStmt->execute();
+                $recentPayments = $paymentsStmt->fetchAll();
+            }
+        }
+        
         // Get payment statistics
         $paymentStats = [
             'total_payments' => 0,
@@ -373,7 +414,7 @@ include 'includes/header.php';
 <?php endif; ?>
 
 <div class="row mt-4">
-    <div class="col-md-8">
+    <div class="col-md-6">
         <div class="card">
             <div class="card-header">
                 <strong>Recent Members</strong>
@@ -426,7 +467,64 @@ include 'includes/header.php';
                     </table>
                 </div>
                 <div class="text-center mt-3">
-                    <a href="members.php" class="btn btn-primary">View All Members</a>
+                    <a href="members.php" class="btn btn-primary btn-sm">View All Members</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Recent Payments -->
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <strong><i class="cil-dollar"></i> Recent Successful Payments</strong>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Member</th>
+                                <th>Amount</th>
+                                <th>Year</th>
+                                <th>Date</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php if (empty($recentPayments)): ?>
+                                <tr>
+                                    <td colspan="4" class="text-center text-muted">No payments found</td>
+                                </tr>
+                            <?php else: ?>
+                                <?php foreach ($recentPayments as $payment): ?>
+                                    <tr>
+                                        <td>
+                                            <div>
+                                                <strong><?php echo htmlspecialchars($payment['fullname']); ?></strong>
+                                                <br><small class="text-muted"><?php echo htmlspecialchars($payment['student_id']); ?></small>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <strong class="text-success">GH₵<?php echo number_format($payment['amount'], 2); ?></strong>
+                                        </td>
+                                        <td>
+                                            <?php if ($payment['dues_year']): ?>
+                                                <span class="badge bg-info"><?php echo $payment['dues_year']; ?></span>
+                                            <?php else: ?>
+                                                <span class="text-muted">-</span>
+                                            <?php endif; ?>
+                                        </td>
+                                        <td>
+                                            <small><?php echo formatDate($payment['payment_date'], 'd M Y'); ?></small>
+                                        </td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="text-center mt-3">
+                    <a href="payments.php" class="btn btn-success btn-sm">View All Payments</a>
                 </div>
             </div>
         </div>
