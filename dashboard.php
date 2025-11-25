@@ -35,6 +35,74 @@ if ($canViewStats) {
         }
         // Get recent members
         $recentMembers = $member->getAll(5, 0);
+        
+        // Get payment statistics
+        $paymentStats = [
+            'total_payments' => 0,
+            'completed_payments' => 0,
+            'pending_payments' => 0,
+            'failed_payments' => 0,
+            'total_amount' => 0,
+            'completed_amount' => 0
+        ];
+        
+        // Build query based on role
+        if (hasRole('Admin')) {
+            // Admin sees all payments
+            $paymentQuery = "SELECT 
+                            COUNT(*) as total_payments,
+                            SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed_payments,
+                            SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) as pending_payments,
+                            SUM(CASE WHEN status = 'failed' THEN 1 ELSE 0 END) as failed_payments,
+                            SUM(amount) as total_amount,
+                            SUM(CASE WHEN status = 'completed' THEN amount ELSE 0 END) as completed_amount
+                            FROM payments";
+            $paymentStmt = $db->query($paymentQuery);
+        } elseif (hasRole('Executive')) {
+            // Executive sees payments from their assigned campus
+            // First get executive's campus assignment
+            $execQuery = "SELECT ce.campus_id 
+                         FROM campus_executives ce
+                         INNER JOIN members m ON ce.member_id = m.id
+                         WHERE m.user_id = :user_id
+                         LIMIT 1";
+            $execStmt = $db->prepare($execQuery);
+            $execStmt->bindParam(':user_id', $_SESSION['user_id']);
+            $execStmt->execute();
+            $execData = $execStmt->fetch();
+            
+            if ($execData && $execData['campus_id']) {
+                // Get payments from members in this campus
+                $paymentQuery = "SELECT 
+                                COUNT(*) as total_payments,
+                                SUM(CASE WHEN p.status = 'completed' THEN 1 ELSE 0 END) as completed_payments,
+                                SUM(CASE WHEN p.status = 'pending' THEN 1 ELSE 0 END) as pending_payments,
+                                SUM(CASE WHEN p.status = 'failed' THEN 1 ELSE 0 END) as failed_payments,
+                                SUM(p.amount) as total_amount,
+                                SUM(CASE WHEN p.status = 'completed' THEN p.amount ELSE 0 END) as completed_amount
+                                FROM payments p
+                                INNER JOIN members m ON p.member_id = m.id
+                                WHERE m.campus_id = :campus_id";
+                $paymentStmt = $db->prepare($paymentQuery);
+                $paymentStmt->bindParam(':campus_id', $execData['campus_id']);
+                $paymentStmt->execute();
+            }
+        }
+        
+        if (isset($paymentStmt)) {
+            $paymentData = $paymentStmt->fetch();
+            if ($paymentData) {
+                $paymentStats = [
+                    'total_payments' => (int)$paymentData['total_payments'],
+                    'completed_payments' => (int)$paymentData['completed_payments'],
+                    'pending_payments' => (int)$paymentData['pending_payments'],
+                    'failed_payments' => (int)$paymentData['failed_payments'],
+                    'total_amount' => (float)$paymentData['total_amount'],
+                    'completed_amount' => (float)$paymentData['completed_amount']
+                ];
+            }
+        }
+        
     } catch (Exception $e) {
         error_log("Error fetching statistics: " . $e->getMessage());
     }
@@ -223,7 +291,88 @@ include 'includes/header.php';
     </div>
 </div>
 
+<!-- Payment Statistics -->
+<?php if (isset($paymentStats) && ($paymentStats['total_payments'] > 0 || hasRole('Admin'))): ?>
+<div class="row mt-4">
+    <div class="col-12">
+        <h4 class="mb-3">
+            <i class="cil-dollar"></i> Payment Statistics
+            <?php if (hasRole('Executive')): ?>
+                <small class="text-muted">(Your Campus)</small>
+            <?php endif; ?>
+        </h4>
+    </div>
+</div>
+
 <div class="row">
+    <div class="col-sm-6 col-lg-3">
+        <div class="card stat-card info">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="text-medium-emphasis small text-uppercase fw-semibold">Total Payments</div>
+                        <div class="fs-3 fw-semibold text-info"><?php echo number_format($paymentStats['total_payments']); ?></div>
+                    </div>
+                    <div class="text-info" style="font-size: 3rem; opacity: 0.2;">
+                        <i class="cil-list"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-sm-6 col-lg-3">
+        <div class="card stat-card success">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="text-medium-emphasis small text-uppercase fw-semibold">Completed</div>
+                        <div class="fs-3 fw-semibold text-success"><?php echo number_format($paymentStats['completed_payments']); ?></div>
+                        <div class="small text-success">GH₵<?php echo number_format($paymentStats['completed_amount'], 2); ?></div>
+                    </div>
+                    <div class="text-success" style="font-size: 3rem; opacity: 0.2;">
+                        <i class="cil-check-circle"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-sm-6 col-lg-3">
+        <div class="card stat-card warning">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="text-medium-emphasis small text-uppercase fw-semibold">Pending</div>
+                        <div class="fs-3 fw-semibold text-warning"><?php echo number_format($paymentStats['pending_payments']); ?></div>
+                    </div>
+                    <div class="text-warning" style="font-size: 3rem; opacity: 0.2;">
+                        <i class="cil-clock"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-sm-6 col-lg-3">
+        <div class="card stat-card danger">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="text-medium-emphasis small text-uppercase fw-semibold">Failed</div>
+                        <div class="fs-3 fw-semibold text-danger"><?php echo number_format($paymentStats['failed_payments']); ?></div>
+                    </div>
+                    <div class="text-danger" style="font-size: 3rem; opacity: 0.2;">
+                        <i class="cil-x-circle"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
+
+<div class="row mt-4">
     <div class="col-md-8">
         <div class="card">
             <div class="card-header">
