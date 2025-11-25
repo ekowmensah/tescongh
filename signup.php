@@ -164,7 +164,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     try {
                         require_once 'classes/HubtelSMS.php';
                         
-                        $sms = new HubtelSMS(HUBTEL_CLIENT_ID, HUBTEL_CLIENT_SECRET, SMS_SENDER_ID);
+                        $sms = new HubtelSMS(HUBTEL_SMS_CLIENT_ID, HUBTEL_SMS_CLIENT_SECRET, SMS_SENDER_ID);
                         $verification_url = APP_URL . '/verify_account.php?token=' . $token;
                         
                         // Create SMS message

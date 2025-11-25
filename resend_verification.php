@@ -94,7 +94,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $insertStmt->execute();
         
         // Send SMS
-        $sms = new HubtelSMS(HUBTEL_CLIENT_ID, HUBTEL_CLIENT_SECRET, SMS_SENDER_ID);
+        $sms = new HubtelSMS(HUBTEL_SMS_CLIENT_ID, HUBTEL_SMS_CLIENT_SECRET, SMS_SENDER_ID);
         $verification_url = APP_URL . '/verify_account.php?token=' . $token;
         
         $message = "UEW-TESCON: Your new verification link: {$verification_url} (Valid for 24 hours)";

@@ -4,6 +4,7 @@ require_once 'config/Database.php';
 require_once 'includes/functions.php';
 require_once 'includes/auth.php';
 require_once 'classes/Payment.php';
+require_once 'classes/HubtelCheckout.php';
 
 $pageTitle = 'Pay Dues';
 
@@ -121,16 +122,71 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $paymentStmt->bindValue(':notes', 'Self-service payment via member portal');
             $paymentStmt->execute();
             
+            $paymentId = $db->lastInsertId();
+            
             $db->commit();
             
-            setFlashMessage('success', 'Payment initiated successfully! Your payment is pending confirmation.');
-            redirect('payments.php');
+            // If Hubtel payment method, initiate online checkout
+            if (in_array($payment_method, ['hubtel_mobile', 'hubtel_card'])) {
+                try {
+                    $hubtel = new HubtelCheckout(
+                        HUBTEL_CLIENT_ID,
+                        HUBTEL_CLIENT_SECRET,
+                        HUBTEL_MERCHANT_ACCOUNT
+                    );
+                    
+                    $description = "UEW-TESCON Membership Dues {$dueToPayFor['year']} - {$memberData['fullname']}";
+                    $callbackUrl = APP_URL . '/payment_callback.php';
+                    $returnUrl = APP_URL . '/payment_success.php?ref=' . $transactionId;
+                    $cancellationUrl = APP_URL . '/pay_dues.php?cancelled=1';
+                    
+                    $result = $hubtel->initiateCheckout(
+                        $amount,
+                        $description,
+                        $callbackUrl,
+                        $returnUrl,
+                        $transactionId,
+                        [
+                            'payeeName' => $memberData['fullname'],
+                            'payeeMobileNumber' => $memberData['phone'],
+                            'payeeEmail' => $memberData['email'],
+                            'cancellationUrl' => $cancellationUrl
+                        ]
+                    );
+                    
+                    if ($result['success']) {
+                        // Store Hubtel checkout ID
+                        $updateQuery = "UPDATE payments SET hubtel_reference = :checkout_id WHERE id = :payment_id";
+                        $updateStmt = $db->prepare($updateQuery);
+                        $updateStmt->bindParam(':checkout_id', $result['data']['data']['checkoutId']);
+                        $updateStmt->bindParam(':payment_id', $paymentId);
+                        $updateStmt->execute();
+                        
+                        // Redirect to Hubtel checkout page
+                        header('Location: ' . $result['data']['data']['checkoutUrl']);
+                        exit;
+                    } else {
+                        throw new Exception('Failed to initiate Hubtel checkout: ' . $result['error']);
+                    }
+                } catch (Exception $e) {
+                    setFlashMessage('warning', 'Payment record created but online checkout failed: ' . $e->getMessage() . '. Please contact support.');
+                    redirect('payments.php');
+                }
+            } else {
+                setFlashMessage('success', 'Payment initiated successfully! Your payment is pending confirmation.');
+                redirect('payments.php');
+            }
             
         } catch (Exception $e) {
             $db->rollBack();
             setFlashMessage('danger', 'Failed to process payment: ' . $e->getMessage());
         }
     }
+}
+
+// Check if payment was cancelled
+if (isset($_GET['cancelled'])) {
+    setFlashMessage('warning', 'Payment was cancelled. You can try again when ready.');
 }
 
 include 'includes/header.php';
