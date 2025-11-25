@@ -39,10 +39,11 @@ if (!$event) {
 }
 
 // Get attendees
-$attendeesQuery = "SELECT ea.*, m.fullname, m.student_id, m.phone, m.email as member_email,
+$attendeesQuery = "SELECT ea.*, m.fullname, m.student_id, m.phone, u.email as member_email,
                           c.name as campus_name, i.name as institution_name
                    FROM event_attendees ea
                    INNER JOIN members m ON ea.member_id = m.id
+                   LEFT JOIN users u ON m.user_id = u.id
                    LEFT JOIN campuses c ON m.campus_id = c.id
                    LEFT JOIN institutions i ON c.institution_id = i.id
                    WHERE ea.event_id = :event_id
