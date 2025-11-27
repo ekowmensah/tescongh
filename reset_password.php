@@ -85,66 +85,289 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $validToken) {
     <link rel="shortcut icon" type="image/png" href="assets/images/logo.png">
     
     <!-- CoreUI CSS -->
-    <link href="assets/vendors/@coreui/coreui/css/coreui.min.css" rel="stylesheet">
-    <link href="assets/vendors/@coreui/icons/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/@coreui/coreui@4.2.0/dist/css/coreui.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@coreui/icons@3.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     
     <style>
+        :root {
+            --primary-blue: #1e40af;
+            --secondary-blue: #3b82f6;
+            --light-blue: #dbeafe;
+            --primary-red: #dc2626;
+            --secondary-red: #ef4444;
+            --success-green: #059669;
+            --light-green: #d1fae5;
+        }
+        
         body {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, var(--primary-blue) 0%, #1e3a8a 50%, var(--primary-red) 100%);
             min-height: 100vh;
+            font-family: 'Inter', sans-serif;
+            position: relative;
+            overflow-x: hidden;
             display: flex;
             align-items: center;
             justify-content: center;
         }
+        
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320"><path fill="rgba(255,255,255,0.05)" d="M0,96L48,112C96,128,192,160,288,160C384,160,480,128,576,122.7C672,117,768,139,864,138.7C960,139,1056,117,1152,101.3C1248,85,1344,75,1392,69.3L1440,64L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path></svg>');
+            background-size: cover;
+            background-position: bottom;
+        }
+        
         .reset-password-container {
             width: 100%;
-            max-width: 450px;
-            padding: 15px;
+            max-width: 520px;
+            padding: 20px;
+            position: relative;
+            z-index: 1;
         }
+        
         .card {
             border: none;
-            border-radius: 15px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            backdrop-filter: blur(10px);
+            background: rgba(255,255,255,0.98);
+            overflow: hidden;
         }
+        
         .card-header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, var(--primary-blue) 0%, var(--primary-red) 100%);
             color: white;
-            border-radius: 15px 15px 0 0 !important;
-            padding: 25px;
+            padding: 35px 30px;
             text-align: center;
-        }
-        .card-body {
-            padding: 30px;
-        }
-        .btn-primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             border: none;
-            padding: 12px;
-            font-weight: 600;
+            position: relative;
         }
-        .btn-primary:hover {
-            background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+        
+        .card-header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+            animation: rotate 20s linear infinite;
         }
-        .back-to-login {
-            text-align: center;
-            margin-top: 20px;
+        
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
         }
+        
+        .card-header-content {
+            position: relative;
+            z-index: 1;
+        }
+        
+        .card-header h4 {
+            margin: 0;
+            font-size: 1.75rem;
+            font-weight: 800;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+        
+        .card-header p {
+            margin: 10px 0 0 0;
+            opacity: 0.95;
+            font-size: 0.95rem;
+        }
+        
+        .card-body {
+            padding: 35px 30px;
+        }
+        
         .logo-container {
             text-align: center;
+            margin-bottom: 25px;
+        }
+        
+        .logo-container img {
+            max-width: 90px;
+            height: auto;
+            filter: drop-shadow(0 4px 8px rgba(0,0,0,0.2));
+        }
+        
+        .form-label {
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 8px;
+        }
+        
+        .input-group-text {
+            background: var(--light-blue);
+            border: 1px solid var(--secondary-blue);
+            color: var(--primary-blue);
+            font-weight: 600;
+        }
+        
+        .form-control {
+            border: 1px solid #d1d5db;
+            padding: 12px 15px;
+            font-size: 0.95rem;
+        }
+        
+        .form-control:focus {
+            border-color: var(--secondary-blue);
+            box-shadow: 0 0 0 0.25rem rgba(59, 130, 246, 0.25);
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary-blue) 0%, var(--secondary-blue) 100%);
+            border: none;
+            padding: 14px;
+            font-weight: 700;
+            font-size: 1rem;
+            transition: all 0.3s;
+        }
+        
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #1e3a8a 0%, var(--primary-blue) 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(30, 64, 175, 0.4);
+        }
+        
+        .btn-success {
+            background: linear-gradient(135deg, var(--success-green) 0%, #10b981 100%);
+            border: none;
+            padding: 14px;
+            font-weight: 700;
+            transition: all 0.3s;
+        }
+        
+        .btn-success:hover {
+            background: linear-gradient(135deg, #047857 0%, var(--success-green) 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(5, 150, 105, 0.4);
+        }
+        
+        .back-to-login {
+            text-align: center;
+            margin-top: 25px;
+            padding-top: 20px;
+            border-top: 1px solid #e5e7eb;
+        }
+        
+        .back-to-login a {
+            color: var(--primary-blue);
+            text-decoration: none;
+            font-weight: 600;
+            transition: color 0.3s;
+        }
+        
+        .back-to-login a:hover {
+            color: var(--primary-red);
+        }
+        
+        .alert {
+            border-radius: 10px;
+            border: none;
+            padding: 15px 20px;
             margin-bottom: 20px;
         }
-        .logo-container img {
-            max-width: 80px;
-            height: auto;
+        
+        .alert-danger {
+            background: #fee2e2;
+            color: #991b1b;
         }
+        
+        .alert-success {
+            background: var(--light-green);
+            color: #065f46;
+        }
+        
+        .alert-info {
+            background: var(--light-blue);
+            color: var(--primary-blue);
+        }
+        
         .password-requirements {
-            font-size: 0.875rem;
-            color: #6c757d;
-            margin-top: 0.5rem;
+            background: #f3f4f6;
+            border-left: 4px solid var(--secondary-blue);
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
         }
+        
+        .password-requirements strong {
+            color: #374151;
+            display: block;
+            margin-bottom: 8px;
+        }
+        
         .password-requirements ul {
             margin-bottom: 0;
             padding-left: 1.5rem;
+            color: #6b7280;
+        }
+        
+        .password-requirements li {
+            margin-bottom: 4px;
+        }
+        
+        .user-info-box {
+            background: linear-gradient(135deg, var(--light-blue) 0%, #e0f2fe 100%);
+            border: 1px solid var(--secondary-blue);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .user-info-box i {
+            color: var(--primary-blue);
+        }
+        
+        .success-icon {
+            font-size: 4rem;
+            color: var(--success-green);
+            margin-bottom: 20px;
+            animation: scaleIn 0.5s ease-out;
+        }
+        
+        @keyframes scaleIn {
+            from {
+                transform: scale(0);
+                opacity: 0;
+            }
+            to {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+        
+        .footer-text {
+            text-align: center;
+            margin-top: 25px;
+            color: white;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+        }
+        
+        .footer-text small {
+            opacity: 0.9;
+        }
+        
+        @media (max-width: 576px) {
+            .reset-password-container {
+                padding: 15px;
+            }
+            
+            .card-body {
+                padding: 25px 20px;
+            }
+            
+            .card-header {
+                padding: 25px 20px;
+            }
         }
     </style>
 </head>
@@ -156,57 +379,75 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $validToken) {
         
         <div class="card">
             <div class="card-header">
-                <h4 class="mb-0">
-                    <i class="cil-lock-locked"></i> Reset Password
-                </h4>
-                <?php if ($validToken): ?>
-                    <p class="mb-0 mt-2 small">Enter your new password</p>
-                <?php endif; ?>
+                <div class="card-header-content">
+                    <h4>
+                        <i class="cil-shield-alt"></i> Reset Your Password
+                    </h4>
+                    <?php if ($validToken && empty($success)): ?>
+                        <p>Create a strong new password</p>
+                    <?php elseif (!empty($success)): ?>
+                        <p>Password successfully updated!</p>
+                    <?php else: ?>
+                        <p>Invalid or expired link</p>
+                    <?php endif; ?>
+                </div>
             </div>
             
             <div class="card-body">
                 <?php if (!empty($error)): ?>
                     <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                        <i class="cil-warning"></i> <?php echo $error; ?>
+                        <div class="d-flex align-items-center">
+                            <i class="cil-warning me-2" style="font-size: 1.25rem;"></i>
+                            <div><?php echo $error; ?></div>
+                        </div>
                         <button type="button" class="btn-close" data-coreui-dismiss="alert"></button>
                     </div>
                     
                     <?php if (!$validToken): ?>
-                        <div class="text-center mt-3">
-                            <a href="forgot_password.php" class="btn btn-primary">
-                                <i class="cil-reload"></i> Request New Reset Link
+                        <div class="text-center">
+                            <p class="text-muted mb-3">The reset link may have expired or already been used.</p>
+                            <a href="forgot_password.php" class="btn btn-primary btn-lg">
+                                <i class="cil-reload me-2"></i> Request New Reset Link
                             </a>
                         </div>
                     <?php endif; ?>
                 <?php endif; ?>
                 
                 <?php if (!empty($success)): ?>
-                    <div class="alert alert-success alert-dismissible fade show" role="alert">
-                        <i class="cil-check-circle"></i> <?php echo $success; ?>
-                        <button type="button" class="btn-close" data-coreui-dismiss="alert"></button>
-                    </div>
-                    
-                    <div class="text-center mt-3">
-                        <a href="login.php" class="btn btn-primary btn-lg">
-                            <i class="cil-account-logout"></i> Go to Login
+                    <div class="text-center">
+                        <div class="success-icon">
+                            <i class="cil-check-circle"></i>
+                        </div>
+                        <div class="alert alert-success mb-4">
+                            <strong><i class="cil-check me-2"></i>Success!</strong><br>
+                            <?php echo $success; ?>
+                        </div>
+                        <p class="text-muted mb-4">You can now login with your new password.</p>
+                        <a href="login.php" class="btn btn-success btn-lg">
+                            <i class="cil-account-logout me-2"></i> Continue to Login
                         </a>
                     </div>
                 <?php endif; ?>
                 
                 <?php if ($validToken && empty($success)): ?>
-                    <div class="alert alert-info mb-3">
-                        <small>
-                            <i class="cil-info"></i> 
-                            Resetting password for: <strong><?php echo htmlspecialchars($userEmail); ?></strong>
-                        </small>
+                    <div class="user-info-box">
+                        <div class="d-flex align-items-center">
+                            <i class="cil-user me-2" style="font-size: 1.25rem;"></i>
+                            <div>
+                                <small class="text-muted d-block">Resetting password for:</small>
+                                <strong><?php echo htmlspecialchars($userEmail); ?></strong>
+                            </div>
+                        </div>
                     </div>
                     
                     <form method="POST" action="" id="resetPasswordForm">
                         <input type="hidden" name="token" value="<?php echo htmlspecialchars($token); ?>">
                         
-                        <div class="mb-3">
-                            <label class="form-label">New Password</label>
-                            <div class="input-group">
+                        <div class="mb-4">
+                            <label class="form-label">
+                                <i class="cil-lock-locked me-1"></i> New Password
+                            </label>
+                            <div class="input-group input-group-lg">
                                 <span class="input-group-text">
                                     <i class="cil-lock-locked"></i>
                                 </span>
@@ -214,60 +455,66 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $validToken) {
                                        class="form-control" 
                                        name="password" 
                                        id="password"
-                                       placeholder="Enter new password"
+                                       placeholder="Enter your new password"
                                        required 
                                        minlength="6"
                                        autofocus>
                             </div>
                         </div>
                         
-                        <div class="mb-3">
-                            <label class="form-label">Confirm New Password</label>
-                            <div class="input-group">
+                        <div class="mb-4">
+                            <label class="form-label">
+                                <i class="cil-lock-locked me-1"></i> Confirm New Password
+                            </label>
+                            <div class="input-group input-group-lg">
                                 <span class="input-group-text">
-                                    <i class="cil-lock-locked"></i>
+                                    <i class="cil-check"></i>
                                 </span>
                                 <input type="password" 
                                        class="form-control" 
                                        name="confirm_password" 
                                        id="confirm_password"
-                                       placeholder="Confirm new password"
+                                       placeholder="Re-enter your new password"
                                        required 
                                        minlength="6">
                             </div>
                         </div>
                         
                         <div class="password-requirements">
-                            <strong>Password Requirements:</strong>
+                            <strong><i class="cil-info me-1"></i> Password Requirements:</strong>
                             <ul>
-                                <li>Minimum 6 characters</li>
-                                <li>Both passwords must match</li>
+                                <li>Minimum 6 characters long</li>
+                                <li>Both passwords must match exactly</li>
+                                <li>Use a strong, unique password</li>
                             </ul>
                         </div>
                         
                         <div class="d-grid mt-4">
                             <button type="submit" class="btn btn-primary btn-lg">
-                                <i class="cil-check"></i> Reset Password
+                                <i class="cil-check-circle me-2"></i> Update Password
                             </button>
                         </div>
                     </form>
                 <?php endif; ?>
                 
                 <div class="back-to-login">
-                    <a href="login.php" class="text-decoration-none">
-                        <i class="cil-arrow-left"></i> Back to Login
+                    <a href="login.php">
+                        <i class="cil-arrow-left me-1"></i> Back to Login
                     </a>
                 </div>
             </div>
         </div>
         
-        <div class="text-center mt-3 text-white">
-            <small>&copy; <?php echo date('Y'); ?> <?php echo APP_NAME; ?>. All rights reserved.</small>
+        <div class="footer-text">
+            <small>
+                <i class="cil-shield-alt me-1"></i>
+                Secure Password Reset • <?php echo date('Y'); ?> UEW TESCON
+            </small>
         </div>
     </div>
     
     <!-- CoreUI JS -->
-    <script src="assets/vendors/@coreui/coreui/js/coreui.bundle.min.js"></script>
+    <script src="https://unpkg.com/@coreui/coreui@4.2.0/dist/js/coreui.bundle.min.js"></script>
     
     <script>
         // Client-side password validation
