@@ -378,12 +378,20 @@ class User {
             return ['success' => false, 'message' => 'Account is not active'];
         }
 
-        // Generate secure random token (8 bytes = 16 hex characters)
-        // Shorter token for SMS cost-effectiveness while maintaining security
+        // Generate secure random token (8 bytes = 16 hex characters) for email
         $token = bin2hex(random_bytes(8));
         
-        // Token expires in 1 hour
-        $expiresAt = date('Y-m-d H:i:s', strtotime('+1 hour'));
+        // Generate 6-digit OTP code for SMS
+        $otpCode = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+        
+        // Determine delivery method
+        $deliveryMethod = 'both'; // Default: send both email and SMS
+        if (empty($phone)) {
+            $deliveryMethod = 'email'; // No phone, email only
+        }
+        
+        // Token expires in 15 minutes (OTP should be shorter-lived)
+        $expiresAt = date('Y-m-d H:i:s', strtotime('+15 minutes'));
         
         // Delete any existing unused tokens for this user
         $deleteQuery = "DELETE FROM password_reset_tokens WHERE user_id = :user_id AND is_used = 0";
@@ -391,18 +399,22 @@ class User {
         $deleteStmt->bindParam(':user_id', $user['id']);
         $deleteStmt->execute();
         
-        // Insert new token
-        $insertQuery = "INSERT INTO password_reset_tokens (user_id, token, expires_at) 
-                        VALUES (:user_id, :token, :expires_at)";
+        // Insert new token with OTP
+        $insertQuery = "INSERT INTO password_reset_tokens (user_id, token, otp_code, delivery_method, expires_at) 
+                        VALUES (:user_id, :token, :otp_code, :delivery_method, :expires_at)";
         $insertStmt = $this->conn->prepare($insertQuery);
         $insertStmt->bindParam(':user_id', $user['id']);
         $insertStmt->bindParam(':token', $token);
+        $insertStmt->bindParam(':otp_code', $otpCode);
+        $insertStmt->bindParam(':delivery_method', $deliveryMethod);
         $insertStmt->bindParam(':expires_at', $expiresAt);
         
         if ($insertStmt->execute()) {
             return [
                 'success' => true,
                 'token' => $token,
+                'otp_code' => $otpCode,
+                'delivery_method' => $deliveryMethod,
                 'user_id' => $user['id'],
                 'email' => $user['email'],
                 'phone' => $phone,
@@ -448,6 +460,68 @@ class User {
         }
         
         return ['success' => false, 'message' => 'Invalid or expired reset token'];
+    }
+
+    /**
+     * Verify OTP code for password reset
+     * 
+     * @param string $otpCode 6-digit OTP code
+     * @param string $identifier Email or student ID
+     * @return array Result with success status and token
+     */
+    public function verifyOTPCode($otpCode, $identifier) {
+        // First, get user ID from identifier
+        $user = null;
+        if (filter_var($identifier, FILTER_VALIDATE_EMAIL)) {
+            $user = $this->getUserByEmail($identifier);
+        } else {
+            $query = "SELECT u.id FROM users u
+                      INNER JOIN members m ON u.id = m.user_id
+                      WHERE m.student_id = :student_id LIMIT 1";
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindParam(':student_id', $identifier);
+            $stmt->execute();
+            if ($stmt->rowCount() > 0) {
+                $user = $stmt->fetch();
+            }
+        }
+        
+        if (!$user) {
+            return ['success' => false, 'message' => 'Invalid OTP code'];
+        }
+        
+        // Verify OTP code
+        $query = "SELECT prt.*, u.email, u.status 
+                  FROM password_reset_tokens prt
+                  INNER JOIN users u ON prt.user_id = u.id
+                  WHERE prt.otp_code = :otp_code 
+                  AND prt.user_id = :user_id
+                  AND prt.is_used = 0 
+                  AND prt.expires_at > NOW()
+                  LIMIT 1";
+        
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':otp_code', $otpCode);
+        $stmt->bindParam(':user_id', $user['id']);
+        $stmt->execute();
+        
+        if ($stmt->rowCount() > 0) {
+            $data = $stmt->fetch();
+            
+            // Check if user is active
+            if ($data['status'] !== 'Active') {
+                return ['success' => false, 'message' => 'Account is not active'];
+            }
+            
+            return [
+                'success' => true,
+                'token' => $data['token'],
+                'user_id' => $data['user_id'],
+                'email' => $data['email']
+            ];
+        }
+        
+        return ['success' => false, 'message' => 'Invalid or expired OTP code'];
     }
 
     /**

@@ -3,8 +3,6 @@ require_once 'config/config.php';
 require_once 'config/Database.php';
 require_once 'includes/functions.php';
 require_once 'classes/User.php';
-require_once 'classes/HubtelSMS.php';
-require_once 'classes/Email.php';
 
 // Redirect if already logged in
 if (isLoggedIn()) {
@@ -13,107 +11,33 @@ if (isLoggedIn()) {
 
 $error = '';
 $success = '';
+$otpCode = '';
 $identifier = '';
 
+// Handle OTP verification
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $otpCode = sanitize($_POST['otp_code']);
     $identifier = sanitize($_POST['identifier']);
     
-    if (empty($identifier)) {
-        $error = 'Please enter your email address or student ID';
+    if (empty($otpCode)) {
+        $error = 'Please enter the OTP code';
+    } elseif (strlen($otpCode) !== 6 || !ctype_digit($otpCode)) {
+        $error = 'OTP code must be 6 digits';
+    } elseif (empty($identifier)) {
+        $error = 'Please enter your email or student ID';
     } else {
         $database = new Database();
         $db = $database->getConnection();
         
         if ($db) {
             $user = new User($db);
-            $result = $user->createPasswordResetToken($identifier);
+            $result = $user->verifyOTPCode($otpCode, $identifier);
             
             if ($result['success']) {
-                // Generate reset link for email
-                $resetLink = APP_URL . '/reset_password.php?token=' . $result['token'];
-                
-                // Get OTP code for SMS
-                $otpCode = $result['otp_code'];
-                
-                $emailSent = false;
-                $smsSent = false;
-                $deliveryMethods = [];
-                
-                // Send reset LINK via EMAIL
-                try {
-                    $emailService = new Email();
-                    $userName = isset($result['fullname']) ? $result['fullname'] : null;
-                    $emailResult = $emailService->sendPasswordReset($result['email'], $resetLink, $userName);
-                    $emailSent = $emailResult['success'];
-                    
-                    if ($emailSent) {
-                        $deliveryMethods[] = 'email (reset link)';
-                    }
-                } catch (Exception $e) {
-                    error_log('Email Error: ' . $e->getMessage());
-                }
-                
-                // Send OTP CODE via SMS if user has phone number
-                if (!empty($result['phone'])) {
-                    try {
-                        $sms = new HubtelSMS(
-                            HUBTEL_SMS_CLIENT_ID,
-                            HUBTEL_SMS_CLIENT_SECRET,
-                            SMS_SENDER_ID
-                        );
-                        
-                        // Send OTP code via SMS (much shorter message)
-                        $message = "Password Reset\n"
-                                 . "Your Reset code: " . $otpCode . "\n"
-                                 . "Valid for 15 min. Don't share.";
-                        
-                        $smsResult = $sms->sendSimplePOST($result['phone'], $message);
-                        $smsSent = $smsResult['success'];
-                        
-                        if ($smsSent) {
-                            $deliveryMethods[] = 'SMS (OTP code)';
-                        }
-                    } catch (Exception $e) {
-                        error_log('SMS Error: ' . $e->getMessage());
-                    }
-                }
-                
-                // Show success message based on delivery methods
-                if ($emailSent || $smsSent) {
-                    if (count($deliveryMethods) > 0) {
-                        $methodsText = implode(' and ', $deliveryMethods);
-                        $success = "Password reset instructions sent via {$methodsText}.<br><br>";
-                        
-                        if ($smsSent) {
-                            $success .= '<div class="alert alert-info mt-2">'
-                                     . '<i class="cil-mobile me-2"></i>'
-                                     . '<strong>SMS sent!</strong> Check your phone for a 6-digit OTP code. '
-                                     . '<a href="verify_otp.php" class="alert-link">Enter your Email/Student ID and OTP Code</a>'
-                                     . '</div>';
-                        }
-                        
-                        if ($emailSent) {
-                            $success .= '<div class="alert alert-info mt-2">'
-                                     . '<i class="cil-envelope-closed me-2"></i>'
-                                     . '<strong>Email sent!</strong> Check your inbox for the reset link.'
-                                     . '</div>';
-                        }
-                    }
-                } else {
-                    // Fallback: show link on screen
-                    $success = 'Password reset link has been generated. Please copy the link below:<br><br>'
-                             . '<div class="alert alert-info mt-3">'
-                             . '<strong>Reset Link:</strong><br>'
-                             . '<a href="' . htmlspecialchars($resetLink) . '" class="text-break">' 
-                             . htmlspecialchars($resetLink) . '</a>'
-                             . '</div>';
-                }
-                
-                // Clear identifier field on success
-                $identifier = '';
+                // Redirect to reset password page with token
+                redirect('reset_password.php?token=' . $result['token']);
             } else {
-                // For security, show generic message even if account doesn't exist
-                $success = 'If an account exists with this email or student ID, password reset instructions will be sent.';
+                $error = $result['message'];
             }
         } else {
             $error = 'Database connection failed. Please try again later.';
@@ -128,7 +52,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no">
-    <title>Forgot Password - <?php echo APP_NAME; ?></title>
+    <title>Verify OTP - <?php echo APP_NAME; ?></title>
     
     <!-- Favicon -->
     <link rel="icon" type="image/png" href="assets/images/logo.png">
@@ -171,7 +95,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             background-position: bottom;
         }
         
-        .forgot-password-container {
+        .verify-otp-container {
             width: 100%;
             max-width: 500px;
             padding: 20px;
@@ -270,6 +194,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             box-shadow: 0 0 0 0.25rem rgba(59, 130, 246, 0.25);
         }
         
+        .otp-input {
+            font-size: 1.5rem;
+            letter-spacing: 0.5rem;
+            text-align: center;
+            font-weight: 700;
+        }
+        
         .btn-primary {
             background: linear-gradient(135deg, var(--primary-blue) 0%, var(--secondary-blue) 100%);
             border: none;
@@ -315,17 +246,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             color: #991b1b;
         }
         
-        .alert-success {
-            background: #d1fae5;
-            color: #065f46;
-        }
-        
-        .alert-info {
-            background: #dbeafe;
-            color: #1e40af;
-            margin-top: 15px;
-        }
-        
         .info-box {
             background: #f3f4f6;
             border-left: 4px solid var(--secondary-blue);
@@ -351,7 +271,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         
         @media (max-width: 576px) {
-            .forgot-password-container {
+            .verify-otp-container {
                 padding: 15px;
             }
             
@@ -366,7 +286,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </style>
 </head>
 <body>
-    <div class="forgot-password-container">
+    <div class="verify-otp-container">
         <div class="logo-container">
             <img src="assets/images/logo.png" alt="<?php echo APP_NAME; ?>">
         </div>
@@ -375,9 +295,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <div class="card-header">
                 <div class="card-header-content">
                     <h4>
-                        <i class="cil-lock-unlocked"></i> Forgot Password?
+                        <i class="cil-mobile"></i> Verify OTP Code
                     </h4>
-                    <p>Don't worry, we'll help you reset it</p>
+                    <p>Enter the 6-digit code sent to your phone</p>
                 </div>
             </div>
             
@@ -392,20 +312,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     </div>
                 <?php endif; ?>
                 
-                <?php if (!empty($success)): ?>
-                    <div class="alert alert-success alert-dismissible fade show" role="alert">
-                        <div class="d-flex align-items-start">
-                            <i class="cil-check-circle me-2" style="font-size: 1.25rem; margin-top: 2px;"></i>
-                            <div><?php echo $success; ?></div>
-                        </div>
-                        <button type="button" class="btn-close" data-coreui-dismiss="alert"></button>
-                    </div>
-                <?php endif; ?>
-                
                 <form method="POST" action="">
                     <div class="mb-4">
                         <label class="form-label">
-                            <i class="cil-user me-1"></i> Email Address or Student ID
+                            <i class="cil-user me-1"></i> Email or Student ID
                         </label>
                         <div class="input-group input-group-lg">
                             <span class="input-group-text">
@@ -416,23 +326,48 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                    name="identifier" 
                                    placeholder="e.g., john@example.com or 12345678"
                                    value="<?php echo htmlspecialchars($identifier); ?>"
+                                   required>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label class="form-label">
+                            <i class="cil-lock-locked me-1"></i> OTP Code
+                        </label>
+                        <div class="input-group input-group-lg">
+                            <span class="input-group-text">
+                                <i class="cil-shield-alt"></i>
+                            </span>
+                            <input type="text" 
+                                   class="form-control otp-input" 
+                                   name="otp_code" 
+                                   placeholder="000000"
+                                   value="<?php echo htmlspecialchars($otpCode); ?>"
+                                   maxlength="6"
+                                   pattern="[0-9]{6}"
                                    required 
                                    autofocus>
                         </div>
                         <div class="info-box">
                             <small>
                                 <i class="cil-info me-1"></i>
-                                <strong>How it works:</strong> Enter your email or student ID. We'll send password reset instructions to your registered email and phone number (via SMS).
+                                <strong>Check your phone:</strong> Enter the 6-digit code sent via SMS. The code is valid for 15 minutes.
                             </small>
                         </div>
                     </div>
                     
                     <div class="d-grid mb-3">
                         <button type="submit" class="btn btn-primary btn-lg">
-                            <i class="cil-paper-plane me-2"></i> Send Reset Instructions
+                            <i class="cil-check-circle me-2"></i> Verify & Continue
                         </button>
                     </div>
                 </form>
+                
+                <div class="text-center mb-3">
+                    <a href="forgot_password.php" class="text-muted">
+                        <i class="cil-reload me-1"></i> Didn't receive code? Request new one
+                    </a>
+                </div>
                 
                 <div class="back-to-login">
                     <a href="login.php">
@@ -445,12 +380,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <div class="footer-text">
             <small>
                 <i class="cil-shield-alt me-1"></i>
-                Secure Password Reset • <?php echo date('Y'); ?> UEW TESCON
+                Secure OTP Verification • <?php echo date('Y'); ?> UEW TESCON
             </small>
         </div>
     </div>
     
     <!-- CoreUI JS -->
     <script src="https://unpkg.com/@coreui/coreui@4.2.0/dist/js/coreui.bundle.min.js"></script>
+    
+    <script>
+        // Auto-format OTP input (digits only)
+        document.querySelector('.otp-input').addEventListener('input', function(e) {
+            this.value = this.value.replace(/[^0-9]/g, '').substring(0, 6);
+        });
+    </script>
 </body>
 </html>
