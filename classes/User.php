@@ -323,4 +323,182 @@ class User {
         $stmt->bindParam(':id', $id);
         return $stmt->execute();
     }
+
+    /**
+     * Create password reset token
+     * 
+     * @param string $identifier User email or student ID
+     * @return array Result with success status and token/message
+     */
+    public function createPasswordResetToken($identifier) {
+        // Check if identifier is email or student ID
+        $user = null;
+        $phone = null;
+        
+        if (filter_var($identifier, FILTER_VALIDATE_EMAIL)) {
+            // It's an email
+            $user = $this->getUserByEmail($identifier);
+            
+            // Get phone number if available
+            if ($user) {
+                $phoneQuery = "SELECT phone FROM members WHERE user_id = :user_id LIMIT 1";
+                $phoneStmt = $this->conn->prepare($phoneQuery);
+                $phoneStmt->bindParam(':user_id', $user['id']);
+                $phoneStmt->execute();
+                $phoneData = $phoneStmt->fetch();
+                $phone = $phoneData ? $phoneData['phone'] : null;
+            }
+        } else {
+            // It's a student ID
+            $query = "SELECT u.*, m.phone, m.fullname 
+                      FROM users u
+                      INNER JOIN members m ON u.id = m.user_id
+                      WHERE m.student_id = :student_id LIMIT 1";
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindParam(':student_id', $identifier);
+            $stmt->execute();
+            
+            if ($stmt->rowCount() > 0) {
+                $userData = $stmt->fetch();
+                $user = [
+                    'id' => $userData['id'],
+                    'email' => $userData['email'],
+                    'status' => $userData['status'],
+                    'fullname' => $userData['fullname']
+                ];
+                $phone = $userData['phone'];
+            }
+        }
+        
+        if (!$user) {
+            return ['success' => false, 'message' => 'No account found with this email or student ID'];
+        }
+
+        if ($user['status'] !== 'Active') {
+            return ['success' => false, 'message' => 'Account is not active'];
+        }
+
+        // Generate secure random token (8 bytes = 16 hex characters)
+        // Shorter token for SMS cost-effectiveness while maintaining security
+        $token = bin2hex(random_bytes(8));
+        
+        // Token expires in 1 hour
+        $expiresAt = date('Y-m-d H:i:s', strtotime('+1 hour'));
+        
+        // Delete any existing unused tokens for this user
+        $deleteQuery = "DELETE FROM password_reset_tokens WHERE user_id = :user_id AND is_used = 0";
+        $deleteStmt = $this->conn->prepare($deleteQuery);
+        $deleteStmt->bindParam(':user_id', $user['id']);
+        $deleteStmt->execute();
+        
+        // Insert new token
+        $insertQuery = "INSERT INTO password_reset_tokens (user_id, token, expires_at) 
+                        VALUES (:user_id, :token, :expires_at)";
+        $insertStmt = $this->conn->prepare($insertQuery);
+        $insertStmt->bindParam(':user_id', $user['id']);
+        $insertStmt->bindParam(':token', $token);
+        $insertStmt->bindParam(':expires_at', $expiresAt);
+        
+        if ($insertStmt->execute()) {
+            return [
+                'success' => true,
+                'token' => $token,
+                'user_id' => $user['id'],
+                'email' => $user['email'],
+                'phone' => $phone,
+                'fullname' => isset($user['fullname']) ? $user['fullname'] : null,
+                'expires_at' => $expiresAt
+            ];
+        }
+        
+        return ['success' => false, 'message' => 'Failed to create reset token'];
+    }
+
+    /**
+     * Verify password reset token
+     * 
+     * @param string $token Reset token
+     * @return array Result with success status and user data
+     */
+    public function verifyPasswordResetToken($token) {
+        $query = "SELECT prt.*, u.email, u.status 
+                  FROM password_reset_tokens prt
+                  INNER JOIN users u ON prt.user_id = u.id
+                  WHERE prt.token = :token 
+                  AND prt.is_used = 0 
+                  AND prt.expires_at > NOW()
+                  LIMIT 1";
+        
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':token', $token);
+        $stmt->execute();
+        
+        if ($stmt->rowCount() > 0) {
+            $data = $stmt->fetch();
+            
+            if ($data['status'] !== 'Active') {
+                return ['success' => false, 'message' => 'Account is not active'];
+            }
+            
+            return [
+                'success' => true,
+                'user_id' => $data['user_id'],
+                'email' => $data['email']
+            ];
+        }
+        
+        return ['success' => false, 'message' => 'Invalid or expired reset token'];
+    }
+
+    /**
+     * Reset password using token
+     * 
+     * @param string $token Reset token
+     * @param string $newPassword New password
+     * @return array Result with success status and message
+     */
+    public function resetPasswordWithToken($token, $newPassword) {
+        // Verify token first
+        $verification = $this->verifyPasswordResetToken($token);
+        
+        if (!$verification['success']) {
+            return $verification;
+        }
+        
+        $userId = $verification['user_id'];
+        
+        // Update password
+        $hashedPassword = password_hash($newPassword, PASSWORD_BCRYPT);
+        $updateQuery = "UPDATE users SET password = :password WHERE id = :id";
+        $updateStmt = $this->conn->prepare($updateQuery);
+        $updateStmt->bindParam(':password', $hashedPassword);
+        $updateStmt->bindParam(':id', $userId);
+        
+        if ($updateStmt->execute()) {
+            // Mark token as used
+            $markUsedQuery = "UPDATE password_reset_tokens 
+                             SET is_used = 1, used_at = NOW() 
+                             WHERE token = :token";
+            $markUsedStmt = $this->conn->prepare($markUsedQuery);
+            $markUsedStmt->bindParam(':token', $token);
+            $markUsedStmt->execute();
+            
+            return [
+                'success' => true,
+                'message' => 'Password has been reset successfully'
+            ];
+        }
+        
+        return ['success' => false, 'message' => 'Failed to reset password'];
+    }
+
+    /**
+     * Clean up expired password reset tokens
+     * Should be called periodically (e.g., via cron job)
+     */
+    public function cleanupExpiredTokens() {
+        $query = "DELETE FROM password_reset_tokens WHERE expires_at < NOW()";
+        $stmt = $this->conn->prepare($query);
+        return $stmt->execute();
+    }
 }

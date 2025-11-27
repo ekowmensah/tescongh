@@ -400,7 +400,7 @@ if (isset($_GET['timeout'])) {
                                   <!--  <small class="text-muted">Admin: use email | Members: use student ID</small>-->
                                 </div>
                                 
-                                <div class="mb-4">
+                                <div class="mb-3">
                                     <label class="form-label">Password</label>
                                     <div class="input-group">
                                         <span class="input-group-text">
@@ -408,6 +408,12 @@ if (isset($_GET['timeout'])) {
                                         </span>
                                         <input type="password" class="form-control" name="password" placeholder="Enter your password" required>
                                     </div>
+                                </div>
+                                
+                                <div class="mb-4 text-end">
+                                    <a href="forgot_password.php" class="text-decoration-none" style="color: var(--primary-blue); font-size: 0.9rem;">
+                                        <i class="cil-lock-unlocked"></i> Forgot Password?
+                                    </a>
                                 </div>
                                 
                                 <div class="d-grid">
