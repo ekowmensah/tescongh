@@ -88,7 +88,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             $success .= '<div class="alert alert-info mt-2">'
                                      . '<i class="cil-mobile me-2"></i>'
                                      . '<strong>SMS sent!</strong> Check your phone for a 6-digit OTP code. '
-                                     . '<a href="verify_otp.php" class="alert-link">Enter your Email/Student ID and OTP Code</a>'
+                                     . '<a href="verify_otp.php" class="alert-link">Click Here to Enter your Email/Student ID and OTP Code</a><span>OTP Code expires in 15 minutes)</span>'
                                      . '</div>';
                         }
                         
