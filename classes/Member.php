@@ -2,9 +2,27 @@
 class Member {
     private $conn;
     private $table = 'members';
+    private $hasVotingColumns = null;
 
     public function __construct($db) {
         $this->conn = $db;
+    }
+
+    private function checkVotingColumnsExist() {
+        if ($this->hasVotingColumns !== null) {
+            return $this->hasVotingColumns;
+        }
+        
+        try {
+            $query = "SHOW COLUMNS FROM " . $this->table . " LIKE 'voting_region_id'";
+            $stmt = $this->conn->query($query);
+            $this->hasVotingColumns = ($stmt->rowCount() > 0);
+        } catch (PDOException $e) {
+            error_log("Error checking voting columns: " . $e->getMessage());
+            $this->hasVotingColumns = false;
+        }
+        
+        return $this->hasVotingColumns;
     }
 
     /**
@@ -94,8 +112,13 @@ class Member {
         $params = [];
         
         if (!empty($filters['search'])) {
-            $query .= " AND (m.fullname LIKE :search OR m.phone LIKE :search OR u.email LIKE :search OR m.student_id LIKE :search)";
-            $params[':search'] = "%" . $filters['search'] . "%";
+            $searchTerm = "%" . $filters['search'] . "%";
+            $query .= " AND (m.fullname LIKE :search1 OR m.phone LIKE :search2 OR COALESCE(u.email, '') LIKE :search3 OR COALESCE(m.student_id, '') LIKE :search4 OR m.institution LIKE :search5)";
+            $params[':search1'] = $searchTerm;
+            $params[':search2'] = $searchTerm;
+            $params[':search3'] = $searchTerm;
+            $params[':search4'] = $searchTerm;
+            $params[':search5'] = $searchTerm;
         }
         
         if (!empty($filters['membership_status'])) {
@@ -118,6 +141,23 @@ class Member {
             $params[':campus_id'] = $filters['campus_id'];
         }
         
+        if (!empty($filters['institution'])) {
+            $query .= " AND m.institution = :institution";
+            $params[':institution'] = $filters['institution'];
+        }
+        
+        if ($this->checkVotingColumnsExist()) {
+            if (!empty($filters['voting_region_id'])) {
+                $query .= " AND m.voting_region_id = :voting_region_id";
+                $params[':voting_region_id'] = $filters['voting_region_id'];
+            }
+            
+            if (!empty($filters['voting_constituency_id'])) {
+                $query .= " AND m.voting_constituency_id = :voting_constituency_id";
+                $params[':voting_constituency_id'] = $filters['voting_constituency_id'];
+            }
+        }
+        
         $query .= " ORDER BY m.created_at DESC LIMIT :limit OFFSET :offset";
         
         $stmt = $this->conn->prepare($query);
@@ -133,7 +173,8 @@ class Member {
         
         try {
             $stmt->execute();
-            return $stmt->fetchAll();
+            $results = $stmt->fetchAll();
+            return $results;
         } catch (PDOException $e) {
             error_log("Member getAll error: " . $e->getMessage());
             error_log("Query: " . $query);
@@ -153,8 +194,13 @@ class Member {
         $params = [];
         
         if (!empty($filters['search'])) {
-            $query .= " AND (m.fullname LIKE :search OR m.phone LIKE :search OR u.email LIKE :search OR m.student_id LIKE :search)";
-            $params[':search'] = "%" . $filters['search'] . "%";
+            $searchTerm = "%" . $filters['search'] . "%";
+            $query .= " AND (m.fullname LIKE :search1 OR m.phone LIKE :search2 OR COALESCE(u.email, '') LIKE :search3 OR COALESCE(m.student_id, '') LIKE :search4 OR m.institution LIKE :search5)";
+            $params[':search1'] = $searchTerm;
+            $params[':search2'] = $searchTerm;
+            $params[':search3'] = $searchTerm;
+            $params[':search4'] = $searchTerm;
+            $params[':search5'] = $searchTerm;
         }
         
         if (!empty($filters['membership_status'])) {
@@ -175,6 +221,23 @@ class Member {
         if (!empty($filters['campus_id'])) {
             $query .= " AND m.campus_id = :campus_id";
             $params[':campus_id'] = $filters['campus_id'];
+        }
+        
+        if (!empty($filters['institution'])) {
+            $query .= " AND m.institution = :institution";
+            $params[':institution'] = $filters['institution'];
+        }
+        
+        if ($this->checkVotingColumnsExist()) {
+            if (!empty($filters['voting_region_id'])) {
+                $query .= " AND m.voting_region_id = :voting_region_id";
+                $params[':voting_region_id'] = $filters['voting_region_id'];
+            }
+            
+            if (!empty($filters['voting_constituency_id'])) {
+                $query .= " AND m.voting_constituency_id = :voting_constituency_id";
+                $params[':voting_constituency_id'] = $filters['voting_constituency_id'];
+            }
         }
         
         $stmt = $this->conn->prepare($query);
