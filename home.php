@@ -435,11 +435,11 @@ require_once 'classes/Gallery.php';
             <!-- Row 1: Hon. Alexander Afenyo-Markin -->
             <div class="row g-4 align-items-center mb-5">
                 <div class="col-lg-4 col-md-5 text-center">
-                    <img src="assets/images/welcome/afenyo-markin.jpg" alt="Hon. Alexander Afenyo-Markin" class="img-fluid rounded-4 shadow" style="width: 100%; height: auto;">
+                    <img src="assets/images/welcome/afenyo-markin.jpg" alt="Osahen Alexander Kwamena Afenyo-Markin" class="img-fluid rounded-4 shadow" style="width: 100%; height: auto;">
                 </div>
                 <div class="col-lg-8 col-md-7">
                     <div class="h-100 d-flex flex-column justify-content-center">
-                        <h3 class="fw-bold mb-1">Hon. Alexander Afenyo-Markin</h3>
+                        <h3 class="fw-bold mb-1">Osahen Alexander Kwamena Afenyo-Markin</h3>
                         <p class="mb-1">MP for Effutu • Minority Leader of Ghana’s 9th Parliament</p>
                         <p class="mb-3">3rd Deputy Speaker, ECOWAS Parliament</p>
                         <p class="mb-3">
@@ -486,7 +486,7 @@ require_once 'classes/Gallery.php';
     </section>
     
     <!-- Features Section -->
-    <section class="features">
+  <!--   <section class="features">
         <div class="container">
             <div class="section-title">
                 <h2>What We Offer</h2>
@@ -556,7 +556,7 @@ require_once 'classes/Gallery.php';
             </div>
         </div>
     </section>
-  <!--  Stats Section 
+   Stats Section 
     <section class="stats">
         <div class="container">
             <div class="row">
